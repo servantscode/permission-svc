@@ -22,13 +22,12 @@ import java.util.Date;
 public class LoginSvc {
     private static final Logger LOG = LogManager.getLogger(LoginSvc.class);
 
-    @POST @Consumes(MediaType.APPLICATION_JSON)
+    @POST @Consumes(MediaType.APPLICATION_JSON) @Produces(MediaType.TEXT_PLAIN)
     public String login(@Context HttpServletResponse resp,
                         LoginRequest request) {
         Credentials dbCreds = new LoginDB().getCredentials(request.getEmail());
         if(BCrypt.checkpw(request.getPassword(), dbCreds.getHashedPassword())) {
-            resp.setHeader("Authorization", "Bearer " + generateJWT(dbCreds));
-            return "Hello World! Servant's Code is here!";
+            return generateJWT(dbCreds);
         }
 
         throw new NotAuthorizedException("Invalid login credentials.");
