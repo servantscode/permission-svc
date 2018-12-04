@@ -7,8 +7,6 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
 
 public class LoginDB extends DBAccess {
 
@@ -23,6 +21,20 @@ public class LoginDB extends DBAccess {
             return processResults(stmt);
         } catch (SQLException e) {
             throw new RuntimeException("Could not retrieve login information for: " + email, e);
+        }
+    }
+
+    public Credentials getCredentials(int personId) {
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement("SELECT l.*, p.name AS person_name, p.email " +
+                     "FROM logins l, people p " +
+                     "WHERE p.id = l.person_id AND l.person_id=?");
+        ){
+            stmt.setInt(1, personId);
+
+            return processResults(stmt);
+        } catch (SQLException e) {
+            throw new RuntimeException("Could not retrieve login information for person: " + personId, e);
         }
     }
 
@@ -88,10 +100,10 @@ public class LoginDB extends DBAccess {
 
             Credentials creds = new Credentials();
             creds.setUsername(rs.getString("person_name"));
-            creds.setUserId(rs.getInt("person_id"));
+            creds.setPersonId(rs.getInt("person_id"));
             creds.setEmail(rs.getString("email"));
             creds.setHashedPassword(rs.getString("hashed_password"));
-            creds.setSystemRole(rs.getString("role"));
+            creds.setRole(rs.getString("role"));
 
             if(rs.next())
                 throw new RuntimeException("Duplicative email logins found!");
