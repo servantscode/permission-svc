@@ -115,7 +115,7 @@ public class LoginSvc {
 
     @GET @Path("/roles") @Produces(APPLICATION_JSON)
     public List<String> getRoles() {
-       return Arrays.asList("system", "admin", "parishioner");
+       return Arrays.asList("system", "admin", "staff", "parishioner");
     }
 
     // ----- Private -----
