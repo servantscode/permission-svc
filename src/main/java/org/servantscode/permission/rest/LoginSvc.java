@@ -5,6 +5,7 @@ import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTCreationException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.ThreadContext;
 import org.servantscode.commons.StringUtils;
 import org.servantscode.permission.Credentials;
 import org.servantscode.permission.LoginRequest;
@@ -31,8 +32,12 @@ public class LoginSvc {
                         LoginRequest request) {
 
         Credentials dbCreds = new LoginDB().getCredentials(request.getEmail());
-        if(BCrypt.checkpw(request.getPassword(), dbCreds.getHashedPassword()))
-            return generateJWT(dbCreds);
+        if(BCrypt.checkpw(request.getPassword(), dbCreds.getHashedPassword())) {
+            String creds = generateJWT(dbCreds);
+            LOG.info(dbCreds.getEmail() + " logged in.");
+            ThreadContext.put("user", dbCreds.getEmail());
+            return creds;
+        }
 
         throw new NotAuthorizedException("Invalid login credentials.");
     }
