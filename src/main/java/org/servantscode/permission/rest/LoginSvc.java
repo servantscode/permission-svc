@@ -128,7 +128,7 @@ public class LoginSvc {
         try {
             Algorithm algorithm = Algorithm.HMAC256("secret");
             Date now = new Date();
-            long duration = 24*60*60*1000; // 24 hours;
+            long duration = 24*60*60*1000; // 24 hours; TODO: Parameterize this
 
             return JWT.create()
                     .withSubject(creds.getEmail())
@@ -136,6 +136,7 @@ public class LoginSvc {
                     .withExpiresAt(new Date(now.getTime() + duration))
                     .withIssuer("Servant's Code")
                     .withClaim("role", creds.getRole())
+                    .withClaim("userId", creds.getPersonId())
                     .sign(algorithm);
         } catch (JWTCreationException e){
             throw new RuntimeException("Could not create JWT Token", e);
