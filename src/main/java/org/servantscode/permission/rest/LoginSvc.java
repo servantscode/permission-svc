@@ -11,6 +11,7 @@ import org.servantscode.permission.Credentials;
 import org.servantscode.permission.LoginRequest;
 import org.servantscode.permission.PublicCredentials;
 import org.servantscode.permission.db.LoginDB;
+import org.servantscode.permission.db.RoleDB;
 import org.springframework.security.crypto.bcrypt.BCrypt;
 
 import javax.servlet.http.HttpServletResponse;
@@ -51,7 +52,7 @@ public class LoginSvc {
 
         if(request.getPersonId() <= 0)
             throw new BadRequestException("No valid person specified");
-        if(isEmpty(request.getRole()) || !getRoles().contains(request.getRole()))
+        if(isEmpty(request.getRole()) || !new RoleDB().verifyRole(request.getRole()))
             throw new BadRequestException("No valid role specified");
         if(isEmpty(request.getPassword())) //TODO: Password rules go here
             throw new BadRequestException("No password specified");
@@ -118,10 +119,6 @@ public class LoginSvc {
         return creds.toPublicCredentials();
     }
 
-    @GET @Path("/roles") @Produces(APPLICATION_JSON)
-    public List<String> getRoles() {
-       return Arrays.asList("system", "admin", "staff", "parishioner");
-    }
 
     // ----- Private -----
     private String generateJWT(Credentials creds) {

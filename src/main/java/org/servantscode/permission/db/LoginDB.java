@@ -12,9 +12,9 @@ public class LoginDB extends DBAccess {
 
     public Credentials getCredentials(String email) {
         try (Connection conn = getConnection();
-             PreparedStatement stmt = conn.prepareStatement("SELECT l.*, p.name AS person_name, p.email " +
-                     "FROM logins l, people p " +
-                     "WHERE p.id = l.person_id AND p.email=?");
+             PreparedStatement stmt = conn.prepareStatement("SELECT l.*, p.name AS person_name, r.name AS role, p.email " +
+                                                                 "FROM logins l, people p, roles r " +
+                                                                 "WHERE p.id = l.person_id AND l.role_id = r.id AND p.email=?");
         ){
             stmt.setString(1, email);
 
@@ -26,9 +26,9 @@ public class LoginDB extends DBAccess {
 
     public Credentials getCredentials(int personId) {
         try (Connection conn = getConnection();
-             PreparedStatement stmt = conn.prepareStatement("SELECT l.*, p.name AS person_name, p.email " +
-                     "FROM logins l, people p " +
-                     "WHERE p.id = l.person_id AND l.person_id=?");
+             PreparedStatement stmt = conn.prepareStatement("SELECT l.*, p.name AS person_name, r.name AS role, p.email " +
+                     "FROM logins l, people p, roles r " +
+                     "WHERE p.id = l.person_id AND l.role_id=r.id AND l.person_id=?");
         ){
             stmt.setInt(1, personId);
 
@@ -40,7 +40,7 @@ public class LoginDB extends DBAccess {
 
     public boolean createLogin(int personId, String hashedPassword, String role) {
         try (Connection conn = getConnection();
-             PreparedStatement stmt = conn.prepareStatement("INSERT INTO logins(person_id, hashed_password, role) VALUES (?, ?, ?)");
+             PreparedStatement stmt = conn.prepareStatement("INSERT INTO logins(person_id, hashed_password, roleId) VALUES (?, ?, (SELECT id FROM roles WHERE name=?))");
         ){
 
             stmt.setInt(1, personId);
@@ -55,7 +55,7 @@ public class LoginDB extends DBAccess {
 
     public boolean updateRole(int personId, String role) {
         try (Connection conn = getConnection();
-             PreparedStatement stmt = conn.prepareStatement("UPDATE logins SET role=? WHERE person_id =?");
+             PreparedStatement stmt = conn.prepareStatement("UPDATE logins SET role=(SELECT id FROM roles WHERE name=?) WHERE person_id =?");
         ){
 
             stmt.setString(1, role);
@@ -104,6 +104,7 @@ public class LoginDB extends DBAccess {
             creds.setEmail(rs.getString("email"));
             creds.setHashedPassword(rs.getString("hashed_password"));
             creds.setRole(rs.getString("role"));
+            creds.setRoleId(rs.getInt("role_id"));
 
             if(rs.next())
                 throw new RuntimeException("Duplicative email logins found!");

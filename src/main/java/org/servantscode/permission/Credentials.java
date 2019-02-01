@@ -8,7 +8,10 @@ public class Credentials {
     private String email;
     private String role;
 
-    @JsonIgnore //Just in case
+    @JsonIgnore //Don't let this out!
+    private int roleId;
+
+    @JsonIgnore //Don't let this out!
     private String hashedPassword;
 
     public PublicCredentials toPublicCredentials() {
@@ -26,6 +29,9 @@ public class Credentials {
 
     public String getRole() { return role; }
     public void setRole(String role) { this.role = role; }
+
+    public int getRoleId() { return roleId; }
+    public void setRoleId(int roleId) { this.roleId = roleId; }
 
     public String getHashedPassword() { return hashedPassword; }
     public void setHashedPassword(String hashedPassword) { this.hashedPassword = hashedPassword; }
