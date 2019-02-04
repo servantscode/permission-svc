@@ -9,6 +9,12 @@ import java.util.List;
 
 public class RoleDB extends DBAccess {
 
+    private PermissionDB permDB;
+
+    public RoleDB() {
+        permDB = new PermissionDB();
+    }
+
     public List<Role> getRoles() {
         try (Connection conn = getConnection();
              PreparedStatement stmt = conn.prepareStatement("SELECT * FROM roles");
@@ -76,7 +82,6 @@ public class RoleDB extends DBAccess {
         ){
             stmt.setInt(1, roleId);
 
-
             return stmt.executeUpdate() > 0;
         } catch (SQLException e) {
             throw new RuntimeException("Could not delete role: " + roleId, e);
@@ -89,6 +94,7 @@ public class RoleDB extends DBAccess {
         try (ResultSet rs = stmt.executeQuery()){
             while(rs.next()) {
                 Role r = new Role(rs.getInt("id"), rs.getString("name"));
+                r.setPermissions(permDB.getPermissionsForRoleId(r.getId()));
                 results.add(r);
             }
         }

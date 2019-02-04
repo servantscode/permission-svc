@@ -10,6 +10,12 @@ import java.sql.SQLException;
 
 public class LoginDB extends DBAccess {
 
+    private PermissionDB permDB;
+
+    public LoginDB() {
+        permDB = new PermissionDB();
+    }
+
     public Credentials getCredentials(String email) {
         try (Connection conn = getConnection();
              PreparedStatement stmt = conn.prepareStatement("SELECT l.*, p.name AS person_name, r.name AS role, p.email " +
@@ -40,7 +46,7 @@ public class LoginDB extends DBAccess {
 
     public boolean createLogin(int personId, String hashedPassword, String role) {
         try (Connection conn = getConnection();
-             PreparedStatement stmt = conn.prepareStatement("INSERT INTO logins(person_id, hashed_password, roleId) VALUES (?, ?, (SELECT id FROM roles WHERE name=?))");
+             PreparedStatement stmt = conn.prepareStatement("INSERT INTO logins(person_id, hashed_password, role_Id) VALUES (?, ?, (SELECT id FROM roles WHERE name=?))");
         ){
 
             stmt.setInt(1, personId);
@@ -105,6 +111,7 @@ public class LoginDB extends DBAccess {
             creds.setHashedPassword(rs.getString("hashed_password"));
             creds.setRole(rs.getString("role"));
             creds.setRoleId(rs.getInt("role_id"));
+            creds.setPermissions(permDB.getPermissionsForRoleId(creds.getRoleId()));
 
             if(rs.next())
                 throw new RuntimeException("Duplicative email logins found!");

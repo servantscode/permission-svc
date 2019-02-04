@@ -7,6 +7,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.ThreadContext;
 import org.servantscode.commons.StringUtils;
+import org.servantscode.commons.rest.SCServiceBase;
 import org.servantscode.permission.Credentials;
 import org.servantscode.permission.LoginRequest;
 import org.servantscode.permission.PublicCredentials;
@@ -16,6 +17,7 @@ import org.springframework.security.crypto.bcrypt.BCrypt;
 
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.*;
+import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.SecurityContext;
@@ -25,7 +27,7 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.servantscode.commons.StringUtils.isEmpty;
 
 @Path("/login")
-public class LoginSvc {
+public class LoginSvc extends SCServiceBase {
     private static final Logger LOG = LogManager.getLogger(LoginSvc.class);
 
     @POST @Consumes(APPLICATION_JSON) @Produces(MediaType.TEXT_PLAIN)
@@ -44,11 +46,9 @@ public class LoginSvc {
     }
 
     @POST @Path("/new") @Consumes(APPLICATION_JSON)
-    public void createPassword(@Context SecurityContext securityContext,
-                               CreatePasswordRequest request) {
+    public void createPassword(CreatePasswordRequest request) {
 
-        if(!securityContext.isUserInRole("system") && !securityContext.isUserInRole("admin"))
-            throw new ForbiddenException("Please speak with your admin to complete this action");
+        verifyUserAccess("login.create");
 
         if(request.getPersonId() <= 0)
             throw new BadRequestException("No valid person specified");
@@ -62,12 +62,10 @@ public class LoginSvc {
     }
 
     @PUT @Path("/person/{id}") @Consumes(APPLICATION_JSON)
-    public void updateCredentials(@Context SecurityContext securityContext,
-                                  @PathParam("id") int personId,
+    public void updateCredentials(@PathParam("id") int personId,
                                   CreatePasswordRequest request) {
 
-        if(!securityContext.isUserInRole("system") && !securityContext.isUserInRole("admin"))
-            throw new ForbiddenException("Please speak with your admin to complete this action");
+        verifyUserAccess("login.update");
 
         if(request.getPersonId() <= 0 || request.getPersonId() != personId)
             throw new BadRequestException("No valid person specified");
@@ -89,8 +87,7 @@ public class LoginSvc {
     public Map<String, Boolean> revokePassword(@Context SecurityContext securityContext,
                                               @PathParam("id") int personId) {
 
-        if(!securityContext.isUserInRole("system") && !securityContext.isUserInRole("admin"))
-            throw new ForbiddenException("Please speak with your admin to complete this action");
+        verifyUserAccess("login.delete");
 
         if(personId <= 0)
             throw new BadRequestException("No valid person specified");
@@ -105,6 +102,8 @@ public class LoginSvc {
     @GET @Path("/person/{id}") @Produces(APPLICATION_JSON)
     public PublicCredentials getRole(@Context SecurityContext securityContext,
                                      @PathParam("id") int personId) {
+
+        verifyUserAccess("login.read");
 
         if(!securityContext.isUserInRole("system") && !securityContext.isUserInRole("admin"))
             throw new ForbiddenException("Please speak with your admin to complete this action");
@@ -134,6 +133,7 @@ public class LoginSvc {
                     .withIssuer("Servant's Code")
                     .withClaim("role", creds.getRole())
                     .withClaim("userId", creds.getPersonId())
+                    .withArrayClaim("permissions", creds.getPermissions())
                     .sign(algorithm);
         } catch (JWTCreationException e){
             throw new RuntimeException("Could not create JWT Token", e);

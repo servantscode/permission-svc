@@ -1,23 +1,22 @@
 package org.servantscode.permission.rest;
 
+import org.servantscode.commons.rest.SCServiceBase;
 import org.servantscode.permission.Role;
-import org.servantscode.permission.db.LoginDB;
 import org.servantscode.permission.db.RoleDB;
-import org.springframework.security.crypto.bcrypt.BCrypt;
 
 import javax.ws.rs.*;
+import javax.ws.rs.container.ContainerRequestContext;
+import javax.ws.rs.container.ContainerRequestFilter;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.SecurityContext;
-import java.util.Arrays;
 import java.util.List;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.servantscode.commons.StringUtils.isEmpty;
 
 @Path("/role")
-public class RoleSvc {
+public class RoleSvc extends SCServiceBase {
 
     private RoleDB db;
 
@@ -26,9 +25,8 @@ public class RoleSvc {
     }
 
     @GET @Produces(APPLICATION_JSON)
-    public List<String> getRoles(@Context SecurityContext securityContext) {
-        if(!securityContext.isUserInRole("system") && !securityContext.isUserInRole("admin"))
-            throw new ForbiddenException("Please speak with your admin to complete this action");
+    public List<String> getRoles() {
+        verifyUserAccess("role.list");
 
         return db.getRoles().stream()
                 .map(Role::getName)
@@ -36,10 +34,8 @@ public class RoleSvc {
     }
 
     @POST @Consumes(APPLICATION_JSON) @Produces(APPLICATION_JSON)
-    public Role createRole(@Context SecurityContext securityContext, Role role) {
-
-        if(!securityContext.isUserInRole("system") && !securityContext.isUserInRole("admin"))
-            throw new ForbiddenException("Please speak with your admin to complete this action");
+    public Role createRole(Role role) {
+        verifyUserAccess("role.create");
 
         if(!isEmpty(role.getName()))
             throw new BadRequestException("No name specified");
@@ -48,10 +44,8 @@ public class RoleSvc {
     }
 
     @PUT @Consumes(APPLICATION_JSON) @Produces(APPLICATION_JSON)
-    public Role updateRole(@Context SecurityContext securityContext, Role role) {
-
-        if(!securityContext.isUserInRole("system") && !securityContext.isUserInRole("admin"))
-            throw new ForbiddenException("Please speak with your admin to complete this action");
+    public Role updateRole(Role role) {
+        verifyUserAccess("role.update");
 
         if(role.getId() <= 0)
             throw new BadRequestException("No role specified");
@@ -62,10 +56,8 @@ public class RoleSvc {
     }
 
     @DELETE @Path("/{roleId}")
-    public boolean deleteRole(@Context SecurityContext securityContext, @QueryParam("roleId") int roleId) {
-
-        if(!securityContext.isUserInRole("system") && !securityContext.isUserInRole("admin"))
-            throw new ForbiddenException("Please speak with your admin to complete this action");
+    public boolean deleteRole(@QueryParam("roleId") int roleId) {
+        verifyUserAccess("role.delete");
 
         if(roleId <= 0)
             throw new BadRequestException("No role specified");
