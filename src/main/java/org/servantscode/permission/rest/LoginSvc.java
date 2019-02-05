@@ -105,9 +105,6 @@ public class LoginSvc extends SCServiceBase {
 
         verifyUserAccess("login.read");
 
-        if(!securityContext.isUserInRole("system") && !securityContext.isUserInRole("admin"))
-            throw new ForbiddenException("Please speak with your admin to complete this action");
-
         if(personId <= 0)
             throw new BadRequestException("No valid person specified");
 
