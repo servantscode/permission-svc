@@ -119,7 +119,7 @@ public class LoginSvc extends SCServiceBase {
     // ----- Private -----
     private String generateJWT(Credentials creds) {
         try {
-            Algorithm algorithm = Algorithm.HMAC256("secret");
+            Algorithm algorithm = Algorithm.HMAC256("GV^~me\\KO{]Z'hdUL?Ls[7b<EAWfC0\"2N_ (`m0&}?aK%?j#.'_p[s{Jatv2(@N5");
             Date now = new Date();
             long duration = 24*60*60*1000; // 24 hours; TODO: Parameterize this
 
