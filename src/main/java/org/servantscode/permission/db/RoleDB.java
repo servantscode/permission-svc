@@ -1,13 +1,21 @@
 package org.servantscode.permission.db;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.servantscode.commons.AutoCompleteComparator;
 import org.servantscode.commons.db.DBAccess;
 import org.servantscode.permission.Role;
 
 import java.sql.*;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
+import static java.lang.String.format;
+import static org.servantscode.commons.StringUtils.isEmpty;
+
 public class RoleDB extends DBAccess {
+    private static Logger LOG = LogManager.getLogger(RoleDB.class);
 
     private PermissionDB permDB;
 
@@ -15,15 +23,72 @@ public class RoleDB extends DBAccess {
         permDB = new PermissionDB();
     }
 
-    public List<Role> getRoles() {
+    public int getCount(String search) {
+        String sql = format("Select count(1) from roles%s", optionalWhereClause(search));
         try (Connection conn = getConnection();
-             PreparedStatement stmt = conn.prepareStatement("SELECT * FROM roles");
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+
+            if (rs.next())
+                return rs.getInt(1);
+        } catch (SQLException e) {
+            throw new RuntimeException("Could not retrieve role count '" + search + "'", e);
+        }
+        return 0;
+    }
+
+    public List<String> getRoleNames(String search, int count) {
+        String sql = format("SELECT name FROM roles%s", optionalWhereClause(search));
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+
+            List<String> names = new ArrayList<>();
+
+            while (rs.next())
+                names.add(rs.getString(1));
+
+            long start = System.currentTimeMillis();
+            names.sort(new AutoCompleteComparator(search));
+            LOG.debug(String.format("Sorted %d names in %d ms.", names.size(), System.currentTimeMillis()-start));
+
+            return (count < names.size()) ? names : names.subList(0, count);
+        } catch (SQLException e) {
+            throw new RuntimeException("Could not retrieve role names containing '" + search + "'", e);
+        }
+    }
+
+    public List<Role> getRoles(String search, String sortField, int start, int count) {
+        String sql = format("SELECT * FROM roles%s ORDER BY %s LIMIT ? OFFSET ?", optionalWhereClause(search), sortField);
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql);
         ){
+            stmt.setInt(1, count);
+            stmt.setInt(2, start);
 
             return processResults(stmt);
         } catch (SQLException e) {
             throw new RuntimeException("Could not retrieve roles.", e);
         }
+    }
+
+    public Role getRole(int id) {
+        String sql = "SELECT * FROM roles WHERE id=?";
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+        ) {
+
+            stmt.setInt(1, id);
+
+            List<Role> rules = processResults(stmt);
+            if(rules.isEmpty())
+                return null;
+
+            return rules.get(0);
+        } catch (SQLException e) {
+            throw new RuntimeException("Could not retrieve rule: " + id, e);
+        }
+
     }
 
     public boolean verifyRole(String role) {
@@ -99,5 +164,9 @@ public class RoleDB extends DBAccess {
             }
         }
         return results;
+    }
+
+    private String optionalWhereClause(String search) {
+        return !isEmpty(search) ? format(" WHERE name ILIKE '%%%s%%'", search.replace("'", "''")) : "";
     }
 }
