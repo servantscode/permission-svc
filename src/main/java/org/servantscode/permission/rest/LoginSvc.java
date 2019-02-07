@@ -6,7 +6,6 @@ import com.auth0.jwt.exceptions.JWTCreationException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.ThreadContext;
-import org.servantscode.commons.StringUtils;
 import org.servantscode.commons.rest.SCServiceBase;
 import org.servantscode.permission.Credentials;
 import org.servantscode.permission.LoginRequest;
@@ -17,11 +16,12 @@ import org.springframework.security.crypto.bcrypt.BCrypt;
 
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.*;
-import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.SecurityContext;
-import java.util.*;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.servantscode.commons.StringUtils.isEmpty;
@@ -30,11 +30,17 @@ import static org.servantscode.commons.StringUtils.isEmpty;
 public class LoginSvc extends SCServiceBase {
     private static final Logger LOG = LogManager.getLogger(LoginSvc.class);
 
+    LoginDB db;
+
+    public LoginSvc() {
+        db = new LoginDB();
+    }
+
     @POST @Consumes(APPLICATION_JSON) @Produces(MediaType.TEXT_PLAIN)
     public String login(@Context HttpServletResponse resp,
                         LoginRequest request) {
 
-        Credentials dbCreds = new LoginDB().getCredentials(request.getEmail());
+        Credentials dbCreds = db.getCredentials(request.getEmail());
         if(dbCreds != null && BCrypt.checkpw(request.getPassword(), dbCreds.getHashedPassword())) {
             String creds = generateJWT(dbCreds);
             LOG.info(dbCreds.getEmail() + " logged in.");
@@ -46,9 +52,14 @@ public class LoginSvc extends SCServiceBase {
     }
 
     @POST @Path("/new") @Consumes(APPLICATION_JSON)
-    public void createPassword(CreatePasswordRequest request) {
+    public void createPassword(@Context SecurityContext securityContext,
+                               CreatePasswordRequest request ) {
 
         verifyUserAccess("login.create");
+
+        //Only system users can see system.
+        if(!securityContext.isUserInRole("system") && request.getRole().equals("system"))
+            throw new BadRequestException();
 
         if(request.getPersonId() <= 0)
             throw new BadRequestException("No valid person specified");
@@ -58,19 +69,22 @@ public class LoginSvc extends SCServiceBase {
             throw new BadRequestException("No password specified");
 
         String hashedPassword = BCrypt.hashpw(request.getPassword(), BCrypt.gensalt());
-        new LoginDB().createLogin(request.getPersonId(), hashedPassword, request.getRole());
+        db.createLogin(request.getPersonId(), hashedPassword, request.getRole());
     }
 
     @PUT @Path("/person/{id}") @Consumes(APPLICATION_JSON)
     public void updateCredentials(@PathParam("id") int personId,
+                                  @Context SecurityContext securityContext,
                                   CreatePasswordRequest request) {
 
         verifyUserAccess("login.update");
 
+        //Only system users can see system.
+        if(!securityContext.isUserInRole("system") && request.getRole().equals("system"))
+            throw new BadRequestException();
+
         if(request.getPersonId() <= 0 || request.getPersonId() != personId)
             throw new BadRequestException("No valid person specified");
-
-        LoginDB db = new LoginDB();
 
         if(!isEmpty(request.getPassword())) {
             //TODO: Password rules go here
@@ -89,10 +103,16 @@ public class LoginSvc extends SCServiceBase {
 
         verifyUserAccess("login.delete");
 
+        Credentials creds = db.getCredentials(personId);
+
+        //Only system users can see system.
+        if(!securityContext.isUserInRole("system") && creds.getRole().equals("system"))
+            throw new BadRequestException();
+
         if(personId <= 0)
             throw new BadRequestException("No valid person specified");
 
-        boolean success = new LoginDB().deleteLogin(personId);
+        boolean success = db.deleteLogin(personId);
 
         final HashMap<String, Boolean> resp = new HashMap<>();
         resp.put("success", success);
@@ -108,7 +128,11 @@ public class LoginSvc extends SCServiceBase {
         if(personId <= 0)
             throw new BadRequestException("No valid person specified");
 
-        Credentials creds = new LoginDB().getCredentials(personId);
+        Credentials creds = db.getCredentials(personId);
+        //Only system users can see system.
+        if(!securityContext.isUserInRole("system") && creds.getRole().equals("system"))
+            throw new NotFoundException("No credentials available");
+
         if(creds == null)
             throw new NotFoundException("No credentials available");
 

@@ -8,7 +8,9 @@ import org.servantscode.permission.Role;
 import org.servantscode.permission.db.RoleDB;
 
 import javax.ws.rs.*;
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.SecurityContext;
 import java.util.List;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
@@ -26,23 +28,36 @@ public class RoleSvc extends SCServiceBase {
 
     @GET @Path("/autocomplete") @Produces(APPLICATION_JSON)
     public List<String> getRolesNames(@QueryParam("count") @DefaultValue("100") int count,
-                                      @QueryParam("partial_name") @DefaultValue("") String nameSearch) {
+                                      @QueryParam("partial_name") @DefaultValue("") String nameSearch,
+                                      @Context SecurityContext securityContext) {
+
         verifyUserAccess("role.list");
 
-        return db.getRoleNames(nameSearch, count);
+       List<String> roles = db.getRoleNames(nameSearch, count);
+
+       //Only system users can see system.
+        if(!securityContext.isUserInRole("system"))
+            roles.removeIf(role -> role.equals("system"));
+
+        return roles;
     }
 
     @GET @Produces(MediaType.APPLICATION_JSON)
-    public PaginatedResponse<Role> getRooms(@QueryParam("start") @DefaultValue("0") int start,
+    public PaginatedResponse<Role> getRoles(@QueryParam("start") @DefaultValue("0") int start,
                                             @QueryParam("count") @DefaultValue("10") int count,
                                             @QueryParam("sort_field") @DefaultValue("name") String sortField,
-                                            @QueryParam("partial_name") @DefaultValue("") String nameSearch) {
+                                            @QueryParam("partial_name") @DefaultValue("") String nameSearch,
+                                            @Context SecurityContext securityContext) {
 
         verifyUserAccess("room.list");
         try {
             int totalPeople = db.getCount(nameSearch);
 
             List<Role> results = db.getRoles(nameSearch, sortField, start, count);
+
+            //Only system users can see system.
+            if(!securityContext.isUserInRole("system"))
+                results.removeIf(role -> role.getName().equals("system"));
 
             return new PaginatedResponse<>(start, results.size(), totalPeople, results);
         } catch (Throwable t) {
@@ -52,10 +67,18 @@ public class RoleSvc extends SCServiceBase {
     }
 
     @GET @Path("/{id}") @Produces(MediaType.APPLICATION_JSON)
-    public Role getRole(@PathParam("id") int id) {
+    public Role getRole(@PathParam("id") int id,
+                        @Context SecurityContext securityContext) {
         verifyUserAccess("rule.read");
         try {
-            return db.getRole(id);
+
+            Role role = db.getRole(id);
+
+            //Only system users can see system.
+            if(!securityContext.isUserInRole("system") && role.getName().equals("system"))
+                throw new NotFoundException();
+
+            return role;
         } catch (Throwable t) {
             LOG.error("Retrieving rule failed:", t);
             throw t;
@@ -66,6 +89,10 @@ public class RoleSvc extends SCServiceBase {
     public Role createRole(Role role) {
         verifyUserAccess("role.create");
 
+        //Only system users can see system.
+        if(role.getName().equals("system"))
+            throw new BadRequestException();
+
         if(isEmpty(role.getName()))
             throw new BadRequestException("No name specified");
 
@@ -75,6 +102,10 @@ public class RoleSvc extends SCServiceBase {
     @PUT @Consumes(APPLICATION_JSON) @Produces(APPLICATION_JSON)
     public Role updateRole(Role role) {
         verifyUserAccess("role.update");
+
+        //System role cannot be deleted
+        if(role.getName().equals("system") || role.getId() == 1)
+            throw new BadRequestException();
 
         if(role.getId() <= 0)
             throw new BadRequestException("No role specified");
@@ -87,6 +118,10 @@ public class RoleSvc extends SCServiceBase {
     @DELETE @Path("/{roleId}")
     public boolean deleteRole(@QueryParam("roleId") int roleId) {
         verifyUserAccess("role.delete");
+
+        //System role cannot be deleted
+        if(roleId == 1)
+            throw new BadRequestException();
 
         if(roleId <= 0)
             throw new BadRequestException("No role specified");
