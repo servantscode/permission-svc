@@ -52,7 +52,7 @@ public class RoleDB extends DBAccess {
             names.sort(new AutoCompleteComparator(search));
             LOG.debug(String.format("Sorted %d names in %d ms.", names.size(), System.currentTimeMillis()-start));
 
-            return (count < names.size()) ? names : names.subList(0, count);
+            return (count < names.size()) ? names.subList(0, count): names;
         } catch (SQLException e) {
             throw new RuntimeException("Could not retrieve role names containing '" + search + "'", e);
         }
@@ -118,6 +118,8 @@ public class RoleDB extends DBAccess {
                 if (rs.next())
                     role.setId(rs.getInt(1));
             }
+
+            permDB.createPermissionsForRole(role.getId(), role.getPermissions());
             return role;
         } catch (SQLException e) {
             throw new RuntimeException("Could not create role: " + role.getName(), e);
@@ -135,12 +137,14 @@ public class RoleDB extends DBAccess {
                 throw new RuntimeException("Could not update role: " + role.getName());
             }
 
+            permDB.updatePermissionsForRole(role.getId(), role.getPermissions());
             return role;
         } catch (SQLException e) {
             throw new RuntimeException("Could not update role: " + role.getId(), e);
         }
     }
 
+    //No need to delete permissions. FK delete cascades
     public boolean deleteRole(int roleId) {
         try (Connection conn = getConnection();
              PreparedStatement stmt = conn.prepareStatement("DELETE FROM roles WHERE id=?")

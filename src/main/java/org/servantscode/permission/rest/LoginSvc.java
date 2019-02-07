@@ -35,7 +35,7 @@ public class LoginSvc extends SCServiceBase {
                         LoginRequest request) {
 
         Credentials dbCreds = new LoginDB().getCredentials(request.getEmail());
-        if(BCrypt.checkpw(request.getPassword(), dbCreds.getHashedPassword())) {
+        if(dbCreds != null && BCrypt.checkpw(request.getPassword(), dbCreds.getHashedPassword())) {
             String creds = generateJWT(dbCreds);
             LOG.info(dbCreds.getEmail() + " logged in.");
             ThreadContext.put("user", dbCreds.getEmail());
