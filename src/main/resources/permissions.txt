@@ -50,6 +50,7 @@ reservation.update
 role.create
 role.delete
 role.list
+role.read
 role.update
 room.create
 room.delete
