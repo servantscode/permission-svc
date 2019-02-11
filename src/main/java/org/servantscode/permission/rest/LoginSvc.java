@@ -9,22 +9,16 @@ import org.apache.logging.log4j.ThreadContext;
 import org.servantscode.commons.rest.SCServiceBase;
 import org.servantscode.permission.Credentials;
 import org.servantscode.permission.LoginRequest;
-import org.servantscode.permission.PublicCredentials;
 import org.servantscode.permission.db.LoginDB;
-import org.servantscode.permission.db.RoleDB;
 import org.springframework.security.crypto.bcrypt.BCrypt;
 
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.SecurityContext;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
-import static org.servantscode.commons.StringUtils.isEmpty;
 
 @Path("/login")
 public class LoginSvc extends SCServiceBase {
@@ -50,95 +44,6 @@ public class LoginSvc extends SCServiceBase {
 
         throw new NotAuthorizedException("Invalid login credentials.");
     }
-
-    @POST @Path("/new") @Consumes(APPLICATION_JSON)
-    public void createPassword(@Context SecurityContext securityContext,
-                               CreatePasswordRequest request ) {
-
-        verifyUserAccess("login.create");
-
-        //Only system users can see system.
-        if(!securityContext.isUserInRole("system") && request.getRole().equals("system"))
-            throw new BadRequestException();
-
-        if(request.getPersonId() <= 0)
-            throw new BadRequestException("No valid person specified");
-        if(isEmpty(request.getRole()) || !new RoleDB().verifyRole(request.getRole()))
-            throw new BadRequestException("No valid role specified");
-        if(isEmpty(request.getPassword())) //TODO: Password rules go here
-            throw new BadRequestException("No password specified");
-
-        String hashedPassword = BCrypt.hashpw(request.getPassword(), BCrypt.gensalt());
-        db.createLogin(request.getPersonId(), hashedPassword, request.getRole());
-    }
-
-    @PUT @Path("/person/{id}") @Consumes(APPLICATION_JSON)
-    public void updateCredentials(@PathParam("id") int personId,
-                                  @Context SecurityContext securityContext,
-                                  CreatePasswordRequest request) {
-
-        verifyUserAccess("login.update");
-
-        //Only system users can see system.
-        if(!securityContext.isUserInRole("system") && request.getRole().equals("system"))
-            throw new BadRequestException();
-
-        if(request.getPersonId() <= 0 || request.getPersonId() != personId)
-            throw new BadRequestException("No valid person specified");
-
-        if(!isEmpty(request.getPassword())) {
-            //TODO: Password rules go here
-            String hashedPassword = BCrypt.hashpw(request.getPassword(), BCrypt.gensalt());
-            db.updatePassword(personId, hashedPassword);
-        }
-
-        if(!isEmpty(request.getRole())) {
-            db.updateRole(personId, request.getRole());
-        }
-    }
-
-    @DELETE @Path("/person/{id}") @Produces(APPLICATION_JSON)
-    public Map<String, Boolean> revokePassword(@Context SecurityContext securityContext,
-                                              @PathParam("id") int personId) {
-
-        verifyUserAccess("login.delete");
-
-        Credentials creds = db.getCredentials(personId);
-
-        //Only system users can see system.
-        if(!securityContext.isUserInRole("system") && creds.getRole().equals("system"))
-            throw new BadRequestException();
-
-        if(personId <= 0)
-            throw new BadRequestException("No valid person specified");
-
-        boolean success = db.deleteLogin(personId);
-
-        final HashMap<String, Boolean> resp = new HashMap<>();
-        resp.put("success", success);
-        return resp;
-    }
-
-    @GET @Path("/person/{id}") @Produces(APPLICATION_JSON)
-    public PublicCredentials getRole(@Context SecurityContext securityContext,
-                                     @PathParam("id") int personId) {
-
-        verifyUserAccess("login.read");
-
-        if(personId <= 0)
-            throw new BadRequestException("No valid person specified");
-
-        Credentials creds = db.getCredentials(personId);
-        //Only system users can see system.
-        if(!securityContext.isUserInRole("system") && creds.getRole().equals("system"))
-            throw new NotFoundException("No credentials available");
-
-        if(creds == null)
-            throw new NotFoundException("No credentials available");
-
-        return creds.toPublicCredentials();
-    }
-
 
     // ----- Private -----
     private String generateJWT(Credentials creds) {

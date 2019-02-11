@@ -31,15 +31,9 @@ public class RoleSvc extends SCServiceBase {
                                       @QueryParam("partial_name") @DefaultValue("") String nameSearch,
                                       @Context SecurityContext securityContext) {
 
-        verifyUserAccess("role.list");
+        verifyUserAccess("admin.role.list");
 
-       List<String> roles = db.getRoleNames(nameSearch, count);
-
-       //Only system users can see system.
-        if(!securityContext.isUserInRole("system"))
-            roles.removeIf(role -> role.equals("system"));
-
-        return roles;
+        return db.getRoleNames(nameSearch, count, securityContext.isUserInRole("system"));
     }
 
     @GET @Produces(MediaType.APPLICATION_JSON)
@@ -49,17 +43,15 @@ public class RoleSvc extends SCServiceBase {
                                             @QueryParam("partial_name") @DefaultValue("") String nameSearch,
                                             @Context SecurityContext securityContext) {
 
-        verifyUserAccess("room.list");
+        verifyUserAccess("admin.role.list");
         try {
-            int totalPeople = db.getCount(nameSearch);
+            boolean includeSystemRole = securityContext.isUserInRole("system");
 
-            List<Role> results = db.getRoles(nameSearch, sortField, start, count);
+            int totalRoles = db.getCount(nameSearch, includeSystemRole);
 
-            //Only system users can see system.
-            if(!securityContext.isUserInRole("system"))
-                results.removeIf(role -> role.getName().equals("system"));
+            List<Role> results = db.getRoles(nameSearch, sortField, start, count, includeSystemRole);
 
-            return new PaginatedResponse<>(start, results.size(), totalPeople, results);
+            return new PaginatedResponse<>(start, results.size(), totalRoles, results);
         } catch (Throwable t) {
             LOG.error("Retrieving rooms failed:", t);
             throw t;
@@ -69,7 +61,7 @@ public class RoleSvc extends SCServiceBase {
     @GET @Path("/{id}") @Produces(MediaType.APPLICATION_JSON)
     public Role getRole(@PathParam("id") int id,
                         @Context SecurityContext securityContext) {
-        verifyUserAccess("rule.read");
+        verifyUserAccess("admin.role.read");
         try {
 
             Role role = db.getRole(id);
@@ -87,7 +79,7 @@ public class RoleSvc extends SCServiceBase {
 
     @POST @Consumes(APPLICATION_JSON) @Produces(APPLICATION_JSON)
     public Role createRole(Role role) {
-        verifyUserAccess("role.create");
+        verifyUserAccess("admin.role.create");
 
         //Only system users can see system.
         if(role.getName().equals("system"))
@@ -101,9 +93,9 @@ public class RoleSvc extends SCServiceBase {
 
     @PUT @Consumes(APPLICATION_JSON) @Produces(APPLICATION_JSON)
     public Role updateRole(Role role) {
-        verifyUserAccess("role.update");
+        verifyUserAccess("admin.role.update");
 
-        //System role cannot be deleted
+        //System role cannot be updated
         if(role.getName().equals("system") || role.getId() == 1)
             throw new BadRequestException();
 
@@ -117,7 +109,7 @@ public class RoleSvc extends SCServiceBase {
 
     @DELETE @Path("/{roleId}")
     public boolean deleteRole(@QueryParam("roleId") int roleId) {
-        verifyUserAccess("role.delete");
+        verifyUserAccess("admin.role.delete");
 
         //System role cannot be deleted
         if(roleId == 1)

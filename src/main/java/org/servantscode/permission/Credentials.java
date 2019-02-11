@@ -3,7 +3,7 @@ package org.servantscode.permission;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public class Credentials {
-    private String username;
+    private String name;
     private int personId;
     private String email;
     private String role;
@@ -17,12 +17,11 @@ public class Credentials {
     @JsonIgnore
     private String[] permissions;
 
-    public PublicCredentials toPublicCredentials() {
-        return new PublicCredentials(email, role);
-    }
+    public PublicCredentials toPublicCredentials() { return new PublicCredentials(name, personId, email, role); }
+
     // ----- Accessors -----
-    public String getUsername() { return username; }
-    public void setUsername(String username) { this.username = username; }
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
 
     public int getPersonId() { return personId; }
     public void setPersonId(int personId) { this.personId = personId; }

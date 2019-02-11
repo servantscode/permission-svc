@@ -23,8 +23,8 @@ public class RoleDB extends DBAccess {
         permDB = new PermissionDB();
     }
 
-    public int getCount(String search) {
-        String sql = format("Select count(1) from roles%s", optionalWhereClause(search));
+    public int getCount(String search, boolean includeSystem) {
+        String sql = format("Select count(1) from roles%s", optionalWhereClause(search, includeSystem));
         try (Connection conn = getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql);
              ResultSet rs = stmt.executeQuery()) {
@@ -37,8 +37,8 @@ public class RoleDB extends DBAccess {
         return 0;
     }
 
-    public List<String> getRoleNames(String search, int count) {
-        String sql = format("SELECT name FROM roles%s", optionalWhereClause(search));
+    public List<String> getRoleNames(String search, int count, boolean includeSystem) {
+        String sql = format("SELECT name FROM roles%s", optionalWhereClause(search, includeSystem));
         try (Connection conn = getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql);
              ResultSet rs = stmt.executeQuery()) {
@@ -58,8 +58,8 @@ public class RoleDB extends DBAccess {
         }
     }
 
-    public List<Role> getRoles(String search, String sortField, int start, int count) {
-        String sql = format("SELECT * FROM roles%s ORDER BY %s LIMIT ? OFFSET ?", optionalWhereClause(search), sortField);
+    public List<Role> getRoles(String search, String sortField, int start, int count, boolean includeSystem) {
+        String sql = format("SELECT * FROM roles%s ORDER BY %s LIMIT ? OFFSET ?", optionalWhereClause(search, includeSystem), sortField);
         try (Connection conn = getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql);
         ){
@@ -170,7 +170,10 @@ public class RoleDB extends DBAccess {
         return results;
     }
 
-    private String optionalWhereClause(String search) {
-        return !isEmpty(search) ? format(" WHERE name ILIKE '%%%s%%'", search.replace("'", "''")) : "";
+    private String optionalWhereClause(String search, boolean includeSystem) {
+        String clause = !isEmpty(search) ? format(" WHERE name ILIKE '%%%s%%'", search.replace("'", "''")) : "";
+        if(!includeSystem)
+            clause = (isEmpty(clause)? " WHERE": clause + " AND") + " name <> 'system'";
+        return clause;
     }
 }
