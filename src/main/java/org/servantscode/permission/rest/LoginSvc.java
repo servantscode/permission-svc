@@ -58,7 +58,7 @@ public class LoginSvc extends SCServiceBase {
                     .withExpiresAt(new Date(now.getTime() + duration))
                     .withIssuer("Servant's Code")
                     .withClaim("role", creds.getRole())
-                    .withClaim("userId", creds.getPersonId())
+                    .withClaim("userId", creds.getId())
                     .withArrayClaim("permissions", creds.getPermissions())
                     .sign(algorithm);
         } catch (JWTCreationException e){

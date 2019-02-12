@@ -106,24 +106,24 @@ public class LoginDB extends DBAccess {
         }
     }
 
-    public boolean createLogin(int personId, String hashedPassword, String role) {
+    public boolean createLogin(Credentials creds) {
         try (Connection conn = getConnection();
-             PreparedStatement stmt = conn.prepareStatement("INSERT INTO logins(person_id, hashed_password, role_Id) VALUES (?, ?, (SELECT id FROM roles WHERE name=?))");
+             PreparedStatement stmt = conn.prepareStatement("INSERT INTO logins(person_id, hashed_password, role_id) VALUES (?, ?, (SELECT id FROM roles WHERE name=?))");
         ){
 
-            stmt.setInt(1, personId);
-            stmt.setString(2, hashedPassword);
-            stmt.setString(3, role);
+            stmt.setInt(1, creds.getId());
+            stmt.setString(2, creds.getHashedPassword());
+            stmt.setString(3, creds.getRole());
 
             return stmt.executeUpdate() > 0;
         } catch (SQLException e) {
-            throw new RuntimeException("Could not create login for: Person(" + personId + ")", e);
+            throw new RuntimeException("Could not create login for: Person(" + creds.getId() + ")", e);
         }
     }
 
     public boolean updateRole(int personId, String role) {
         try (Connection conn = getConnection();
-             PreparedStatement stmt = conn.prepareStatement("UPDATE logins SET role=(SELECT id FROM roles WHERE name=?) WHERE person_id =?");
+             PreparedStatement stmt = conn.prepareStatement("UPDATE logins SET role_id=(SELECT id FROM roles WHERE name=?) WHERE person_id=?");
         ){
 
             stmt.setString(1, role);
@@ -137,7 +137,7 @@ public class LoginDB extends DBAccess {
 
     public boolean updatePassword(int personId, String hashedPassword) {
         try (Connection conn = getConnection();
-             PreparedStatement stmt = conn.prepareStatement("UPDATE logins SET hashed_password=? WHERE person_id =?");
+             PreparedStatement stmt = conn.prepareStatement("UPDATE logins SET hashed_password=? WHERE person_id=?");
         ){
 
             stmt.setString(1, hashedPassword);
@@ -168,7 +168,7 @@ public class LoginDB extends DBAccess {
             while(rs.next()) {
                 Credentials creds = new Credentials();
                 creds.setName(rs.getString("name"));
-                creds.setPersonId(rs.getInt("person_id"));
+                creds.setId(rs.getInt("person_id"));
                 creds.setEmail(rs.getString("email"));
                 creds.setHashedPassword(rs.getString("hashed_password"));
                 creds.setRole(rs.getString("role"));

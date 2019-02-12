@@ -6,7 +6,6 @@ import org.servantscode.commons.rest.PaginatedResponse;
 import org.servantscode.commons.rest.SCServiceBase;
 import org.servantscode.permission.Credentials;
 import org.servantscode.permission.PublicCredentials;
-import org.servantscode.permission.Role;
 import org.servantscode.permission.db.LoginDB;
 import org.servantscode.permission.db.RoleDB;
 import org.springframework.security.crypto.bcrypt.BCrypt;
@@ -82,7 +81,7 @@ public class CredentialSvc extends SCServiceBase {
     }
     
     @POST @Consumes(APPLICATION_JSON)
-    public void createCredentials(@Context SecurityContext securityContext,
+    public PublicCredentials createCredentials(@Context SecurityContext securityContext,
                                   CreatePasswordRequest request ) {
 
         verifyUserAccess("admin.login.create");
@@ -91,21 +90,27 @@ public class CredentialSvc extends SCServiceBase {
         if(!securityContext.isUserInRole("system") && request.getRole().equals("system"))
             throw new BadRequestException();
 
-        if(request.getPersonId() <= 0)
+        if(request.getId() <= 0)
             throw new BadRequestException("No valid person specified");
         if(isEmpty(request.getRole()) || !new RoleDB().verifyRole(request.getRole()))
             throw new BadRequestException("No valid role specified");
         if(isEmpty(request.getPassword())) //TODO: Password rules go here
             throw new BadRequestException("No password specified");
 
-        String hashedPassword = BCrypt.hashpw(request.getPassword(), BCrypt.gensalt());
-        db.createLogin(request.getPersonId(), hashedPassword, request.getRole());
+        Credentials creds = new Credentials();
+        creds.setId(request.getId());
+        creds.setRole(request.getRole());
+        creds.setHashedPassword(BCrypt.hashpw(request.getPassword(), BCrypt.gensalt()));
+
+        if(db.createLogin(creds))
+            return getCredentials(securityContext, creds.getId());
+        else
+            throw new WebApplicationException("Could not create credentials");
     }
 
-    @PUT @Path("/{id}") @Consumes(APPLICATION_JSON)
-    public void updateCredentials(@PathParam("id") int personId,
-                                  @Context SecurityContext securityContext,
-                                  CreatePasswordRequest request) {
+    @PUT @Consumes(APPLICATION_JSON)
+    public PublicCredentials updateCredentials(@Context SecurityContext securityContext,
+                                               CreatePasswordRequest request) {
 
         verifyUserAccess("admin.login.update");
 
@@ -113,18 +118,22 @@ public class CredentialSvc extends SCServiceBase {
         if(!securityContext.isUserInRole("system") && request.getRole().equals("system"))
             throw new BadRequestException();
 
-        if(request.getPersonId() <= 0 || request.getPersonId() != personId)
+        if(request.getId() <= 0)
             throw new BadRequestException("No valid person specified");
 
+        boolean updated = false;
         if(!isEmpty(request.getPassword())) {
             //TODO: Password rules go here
             String hashedPassword = BCrypt.hashpw(request.getPassword(), BCrypt.gensalt());
-            db.updatePassword(personId, hashedPassword);
+            updated = db.updatePassword(request.getId(), hashedPassword);
         }
 
-        if(!isEmpty(request.getRole())) {
-            db.updateRole(personId, request.getRole());
-        }
+        if(!isEmpty(request.getRole()))
+            updated |= db.updateRole(request.getId(), request.getRole());
+
+        if(!updated) throw new WebApplicationException("Could not update credentials");
+
+        return getCredentials(securityContext, request.getId());
     }
 
     @DELETE @Path("/{id}") @Produces(APPLICATION_JSON)
