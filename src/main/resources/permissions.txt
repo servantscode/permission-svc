@@ -39,6 +39,9 @@ person.list
 person.metrics
 person.read
 person.update
+photo.create
+photo.delete
+photo.read
 pledge.create
 pledge.delete
 pledge.metrics
