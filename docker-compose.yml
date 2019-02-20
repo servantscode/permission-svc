@@ -1,7 +1,7 @@
 version: '2.4'
 services:
   permission-svc:
-    image: "servantscode/permission:latest"
+    image: "servantscode/permission-svc:latest"
     ports:
      - "8080:8080"
     mem_limit: 128m

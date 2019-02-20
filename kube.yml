@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: permission-svc
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: permission-svc
+  template:
+    metadata:
+      labels:
+        app: permission-svc
+    spec:
+      containers:
+      - name: permission-svc
+        image: servantscode/permission-svc
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8080
+        resources:
+          limits:
+            memory: "200Mi"
+        env:
+        - name: ES_JAVA_OPTS 
+          value: "-Xmx128m -Xms128m"
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: permission-svc
+spec:
+  selector:
+    app: permission-svc
+  ports:
+  - protocol: TCP
+    port: 8080
+    targetPort: 8080
