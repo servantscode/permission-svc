@@ -33,6 +33,11 @@ ministry.enrollment.update
 ministry.list
 ministry.read
 ministry.update
+note.create
+note.delete
+note.list
+note.read
+note.update
 person.create
 person.delete
 person.list
@@ -47,6 +52,11 @@ pledge.delete
 pledge.metrics
 pledge.read
 pledge.update
+private.note.create
+private.note.delete
+private.note.list
+private.note.read
+private.note.update
 reservation.create
 reservation.delete
 reservation.list
