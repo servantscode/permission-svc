@@ -6,6 +6,7 @@ import com.auth0.jwt.exceptions.JWTCreationException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.ThreadContext;
+import org.servantscode.commons.EnvProperty;
 import org.servantscode.commons.rest.SCServiceBase;
 import org.servantscode.permission.Credentials;
 import org.servantscode.permission.LoginRequest;
@@ -23,6 +24,8 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 @Path("/login")
 public class LoginSvc extends SCServiceBase {
     private static final Logger LOG = LogManager.getLogger(LoginSvc.class);
+    private static final String SIGNING_KEY = EnvProperty.get("JWT_KEY", "aJWTKey");
+
 
     LoginDB db;
 
@@ -48,7 +51,7 @@ public class LoginSvc extends SCServiceBase {
     // ----- Private -----
     private String generateJWT(Credentials creds) {
         try {
-            Algorithm algorithm = Algorithm.HMAC256("GV^~me\\KO{]Z'hdUL?Ls[7b<EAWfC0\"2N_ (`m0&}?aK%?j#.'_p[s{Jatv2(@N5");
+            Algorithm algorithm = Algorithm.HMAC256(SIGNING_KEY);
             Date now = new Date();
             long duration = 24*60*60*1000; // 24 hours; TODO: Parameterize this
 
