@@ -136,8 +136,8 @@ public class CredentialSvc extends SCServiceBase {
         return getCredentials(securityContext, request.getId());
     }
 
-    @DELETE @Path("/{id}") @Produces(APPLICATION_JSON)
-    public Map<String, Boolean> revokePassword(@Context SecurityContext securityContext,
+    @DELETE @Path("/{id}")
+    public void revokePassword(@Context SecurityContext securityContext,
                                                @PathParam("id") int personId) {
 
         verifyUserAccess("admin.login.delete");
@@ -151,6 +151,7 @@ public class CredentialSvc extends SCServiceBase {
         if(personId <= 0)
             throw new BadRequestException("No valid person specified");
 
-        return singletonMap("success",  db.deleteLogin(personId));
+        if(!db.deleteLogin(personId))
+            throw new NotFoundException();
     }
 }

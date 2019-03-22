@@ -2,6 +2,7 @@ package org.servantscode.permission.rest;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.omg.CosNaming.NamingContextPackage.NotFound;
 import org.servantscode.commons.rest.PaginatedResponse;
 import org.servantscode.commons.rest.SCServiceBase;
 import org.servantscode.permission.Role;
@@ -108,8 +109,9 @@ public class RoleSvc extends SCServiceBase {
     }
 
     @DELETE @Path("/{roleId}")
-    public boolean deleteRole(@QueryParam("roleId") int roleId) {
+    public void deleteRole(@PathParam("roleId") int roleId) {
         verifyUserAccess("admin.role.delete");
+        LOG.debug("Reqeust to delete roll received: " + roleId);
 
         //System role cannot be deleted
         if(roleId == 1)
@@ -118,6 +120,7 @@ public class RoleSvc extends SCServiceBase {
         if(roleId <= 0)
             throw new BadRequestException("No role specified");
 
-        return db.deleteRole(roleId);
+        if(!db.deleteRole(roleId))
+            throw new NotFoundException();
     }
 }
