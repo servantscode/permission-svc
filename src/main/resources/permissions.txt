@@ -1,5 +1,6 @@
 donation.create
 donation.delete
+donation.list
 donation.metrics
 donation.read
 donation.update
@@ -19,11 +20,13 @@ family.list
 family.metrics
 family.read
 family.update
+admin.family.delete
 admin.login.create
 admin.login.delete
 admin.login.list
 admin.login.read
 admin.login.update
+admin.person.delete
 ministry.create
 ministry.delete
 ministry.enrollment.create
