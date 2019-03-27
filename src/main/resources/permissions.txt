@@ -52,6 +52,7 @@ photo.delete
 photo.read
 pledge.create
 pledge.delete
+pledge.list
 pledge.metrics
 pledge.read
 pledge.update
