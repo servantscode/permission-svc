@@ -14,10 +14,8 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.SecurityContext;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
-import static java.util.Collections.singletonMap;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.servantscode.commons.StringUtils.isEmpty;
 
@@ -29,6 +27,31 @@ public class CredentialSvc extends SCServiceBase {
 
     public CredentialSvc() {
         db = new LoginDB();
+    }
+
+
+    @GET @Produces(APPLICATION_JSON)
+    public PaginatedResponse<PublicCredentials> usersWithAccess(@QueryParam("start") @DefaultValue("0") int start,
+                                                                @QueryParam("count") @DefaultValue("10") int count,
+                                                                @QueryParam("sort_field") @DefaultValue("name") String sortField,
+                                                                @QueryParam("partial_name") @DefaultValue("") String search,
+                                                                @Context SecurityContext securityContext) {
+
+        verifyUserAccess("admin.login.list");
+
+        //Only system users can see system.
+        boolean includeSystem = securityContext.isUserInRole("system");
+
+        try {
+            int totalCredentials = db.getAccessCount(search, includeSystem);
+
+            List<Credentials> results = db.getCredentials(start, count, sortField, search, includeSystem);
+            List<PublicCredentials> publicResults = results.stream().map(Credentials::toPublicCredentials).collect(Collectors.toList());
+            return new PaginatedResponse<>(start, publicResults.size(), totalCredentials, publicResults);
+        } catch (Throwable t) {
+            LOG.error("Retrieving rooms failed:", t);
+            throw t;
+        }
     }
 
     @GET @Path("/role/{role}") @Produces(APPLICATION_JSON)
@@ -56,7 +79,6 @@ public class CredentialSvc extends SCServiceBase {
             LOG.error("Retrieving rooms failed:", t);
             throw t;
         }
-
     }
 
     @GET @Path("/{id}") @Produces(APPLICATION_JSON)
@@ -82,7 +104,7 @@ public class CredentialSvc extends SCServiceBase {
     
     @POST @Consumes(APPLICATION_JSON)
     public PublicCredentials createCredentials(@Context SecurityContext securityContext,
-                                  CreatePasswordRequest request ) {
+                                               CredentialRequest request ) {
 
         verifyUserAccess("admin.login.create");
 
@@ -101,6 +123,7 @@ public class CredentialSvc extends SCServiceBase {
         creds.setId(request.getId());
         creds.setRole(request.getRole());
         creds.setHashedPassword(BCrypt.hashpw(request.getPassword(), BCrypt.gensalt()));
+        creds.setResetPassword(request.isResetPassword());
 
         if(db.createLogin(creds))
             return getCredentials(securityContext, creds.getId());
@@ -110,7 +133,7 @@ public class CredentialSvc extends SCServiceBase {
 
     @PUT @Consumes(APPLICATION_JSON)
     public PublicCredentials updateCredentials(@Context SecurityContext securityContext,
-                                               CreatePasswordRequest request) {
+                                               CredentialRequest request) {
 
         verifyUserAccess("admin.login.update");
 
@@ -128,10 +151,16 @@ public class CredentialSvc extends SCServiceBase {
             updated = db.updatePassword(request.getId(), hashedPassword);
         }
 
-        if(!isEmpty(request.getRole()))
-            updated |= db.updateRole(request.getId(), request.getRole());
+        if(!isEmpty(request.getRole()) || request.isResetPassword()) {
+            Credentials creds = new Credentials();
+            creds.setId(request.getId());
+            creds.setRole(request.getRole());
+            creds.setResetPassword(request.isResetPassword());
 
-        if(!updated) throw new WebApplicationException("Could not update credentials");
+            updated |= db.updateCredentials(creds);
+        }
+
+        if(!updated) throw new BadRequestException("Could not update credentials");
 
         return getCredentials(securityContext, request.getId());
     }

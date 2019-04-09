@@ -1,12 +1,13 @@
 package org.servantscode.permission.rest;
 
-public class CreatePasswordRequest {
+public class CredentialRequest {
     private int id;
     private String email;
     private String password;
     private String role;
+    private boolean resetPassword;
 
-    public CreatePasswordRequest() { }
+    public CredentialRequest() { }
 
     // ----- Accessors -----
     public int getId() { return id; }
@@ -20,4 +21,7 @@ public class CreatePasswordRequest {
 
     public String getRole() { return role; }
     public void setRole(String role) { this.role = role; }
+
+    public boolean isResetPassword() { return resetPassword; }
+    public void setResetPassword(boolean resetPassword) { this.resetPassword = resetPassword; }
 }

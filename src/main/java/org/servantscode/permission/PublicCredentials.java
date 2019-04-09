@@ -5,12 +5,14 @@ public class PublicCredentials {
     private int id;
     private String email;
     private String role;
+    private boolean resetPassword;
 
-    public PublicCredentials(String name, int id, String email, String role) {
+    public PublicCredentials(String name, int id, String email, String role, boolean resetPassword) {
         this.name = name;
         this.id = id;
         this.email = email;
         this.role = role;
+        this.resetPassword = resetPassword;
     }
 
     // ----- Accessors -----
@@ -25,4 +27,7 @@ public class PublicCredentials {
 
     public String getRole() { return role; }
     public void setRole(String role) { this.role = role; }
+
+    public boolean isResetPassword() { return resetPassword; }
+    public void setResetPassword(boolean resetPassword) { this.resetPassword = resetPassword; }
 }

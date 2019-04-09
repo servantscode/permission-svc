@@ -9,6 +9,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -18,12 +19,32 @@ import static org.servantscode.commons.StringUtils.isEmpty;
 public class LoginDB extends DBAccess {
     private static Logger LOG = LogManager.getLogger(LoginDB.class);
 
+    private static final String[] RESET_PASSWORD = new String[] {"password.reset"};
+
     private PermissionDB permDB;
 
     public LoginDB() {
         permDB = new PermissionDB();
     }
 
+
+    public int getAccessCount(String search, boolean includeSystem) {
+        String sql = format("SELECT count(1) FROM logins l, people p, roles r " +
+                            "WHERE p.id = l.person_id AND l.role_id = r.id%s%s",
+                            optionalWhereClause(search),
+                            includeSystem? "": " AND r.id <> 1");
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            try(ResultSet rs = stmt.executeQuery()) {
+                if (rs.next())
+                    return rs.getInt(1);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Could not retrieve role count '" + search + "'", e);
+        }
+        return 0;
+    }
 
     public int getRoleCount(String role, String search) {
         String sql = format("SELECT count(1) FROM logins l, people p, roles r " +
@@ -41,7 +62,27 @@ public class LoginDB extends DBAccess {
             throw new RuntimeException("Could not retrieve role count '" + search + "'", e);
         }
         return 0;
+    }
 
+    public List<Credentials> getCredentials(int start, int count, String sortField, String search, boolean includeSystem) {
+        String sql = format("SELECT l.*, p.name AS name, r.name AS role, p.email " +
+                        "FROM logins l, people p, roles r " +
+                        "WHERE p.id = l.person_id AND l.role_id=r.id%s%s " +
+                        "ORDER BY %s LIMIT ? OFFSET ?",
+                        optionalWhereClause(search),
+                        includeSystem? "": " AND r.id <> 1",
+                        sortField);
+
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+        ){
+            stmt.setInt(1, count);
+            stmt.setInt(2, start);
+
+            return processResults(stmt);
+        } catch (SQLException e) {
+            throw new RuntimeException("Could not retrieve user credentials.", e);
+        }
     }
 
     public Credentials getCredentials(String email) {
@@ -102,18 +143,19 @@ public class LoginDB extends DBAccess {
 
             return processResults(stmt);
         } catch (SQLException e) {
-            throw new RuntimeException("Could not retrieve user with role: " + role, e);
+            throw new RuntimeException("Could not retrieve users with role: " + role, e);
         }
     }
 
     public boolean createLogin(Credentials creds) {
         try (Connection conn = getConnection();
-             PreparedStatement stmt = conn.prepareStatement("INSERT INTO logins(person_id, hashed_password, role_id) VALUES (?, ?, (SELECT id FROM roles WHERE name=?))");
+             PreparedStatement stmt = conn.prepareStatement("INSERT INTO logins(person_id, hashed_password, role_id, reset_password) VALUES (?, ?, (SELECT id FROM roles WHERE name=?), ?)");
         ){
 
             stmt.setInt(1, creds.getId());
             stmt.setString(2, creds.getHashedPassword());
             stmt.setString(3, creds.getRole());
+            stmt.setBoolean(4, creds.isResetPassword());
 
             return stmt.executeUpdate() > 0;
         } catch (SQLException e) {
@@ -121,23 +163,24 @@ public class LoginDB extends DBAccess {
         }
     }
 
-    public boolean updateRole(int personId, String role) {
+    public boolean updateCredentials(Credentials creds) {
         try (Connection conn = getConnection();
-             PreparedStatement stmt = conn.prepareStatement("UPDATE logins SET role_id=(SELECT id FROM roles WHERE name=?) WHERE person_id=?");
+             PreparedStatement stmt = conn.prepareStatement("UPDATE logins SET role_id=(SELECT id FROM roles WHERE name=?), reset_password=? WHERE person_id=?");
         ){
 
-            stmt.setString(1, role);
-            stmt.setInt(2, personId);
+            stmt.setString(1, creds.getRole());
+            stmt.setBoolean(2, creds.isResetPassword());
+            stmt.setInt(3, creds.getId());
 
             return stmt.executeUpdate() > 0;
         } catch (SQLException e) {
-            throw new RuntimeException("Could not update role for Person(" + personId + ")", e);
+            throw new RuntimeException("Could not update role for Person(" + creds.getId() + ")", e);
         }
     }
 
     public boolean updatePassword(int personId, String hashedPassword) {
         try (Connection conn = getConnection();
-             PreparedStatement stmt = conn.prepareStatement("UPDATE logins SET hashed_password=? WHERE person_id=?");
+             PreparedStatement stmt = conn.prepareStatement("UPDATE logins SET hashed_password=?, reset_password=false WHERE person_id=?");
         ){
 
             stmt.setString(1, hashedPassword);
@@ -173,7 +216,13 @@ public class LoginDB extends DBAccess {
                 creds.setHashedPassword(rs.getString("hashed_password"));
                 creds.setRole(rs.getString("role"));
                 creds.setRoleId(rs.getInt("role_id"));
-                creds.setPermissions(permDB.getPermissionsForRoleId(creds.getRoleId()));
+                boolean passwordResetRequired = rs.getBoolean("reset_password");
+                creds.setResetPassword(passwordResetRequired);
+                if(passwordResetRequired) {
+                    creds.setPermissions(RESET_PASSWORD);
+                }else {
+                    creds.setPermissions(permDB.getPermissionsForRoleId(creds.getRoleId()));
+                }
                 results.add(creds);
             }
 

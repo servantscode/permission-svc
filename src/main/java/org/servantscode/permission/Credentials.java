@@ -7,6 +7,7 @@ public class Credentials {
     private String name;
     private String email;
     private String role;
+    private boolean resetPassword;
 
     @JsonIgnore
     private int roleId;
@@ -17,7 +18,7 @@ public class Credentials {
     @JsonIgnore
     private String[] permissions;
 
-    public PublicCredentials toPublicCredentials() { return new PublicCredentials(name, id, email, role); }
+    public PublicCredentials toPublicCredentials() { return new PublicCredentials(name, id, email, role, resetPassword); }
 
     // ----- Accessors -----
     public String getName() { return name; }
@@ -31,6 +32,9 @@ public class Credentials {
 
     public String getRole() { return role; }
     public void setRole(String role) { this.role = role; }
+
+    public boolean isResetPassword() { return resetPassword; }
+    public void setResetPassword(boolean resetPassword) { this.resetPassword = resetPassword; }
 
     public int getRoleId() { return roleId; }
     public void setRoleId(int roleId) { this.roleId = roleId; }
