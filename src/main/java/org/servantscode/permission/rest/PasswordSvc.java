@@ -8,13 +8,12 @@ import org.servantscode.permission.PasswordRequest;
 import org.servantscode.permission.db.LoginDB;
 import org.springframework.security.crypto.bcrypt.BCrypt;
 
-import javax.ws.rs.Consumes;
-import javax.ws.rs.NotAuthorizedException;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
+import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.SecurityContext;
+
+import static org.servantscode.commons.StringUtils.isSet;
 
 @Path("/password")
 public class PasswordSvc extends SCServiceBase {
@@ -29,15 +28,22 @@ public class PasswordSvc extends SCServiceBase {
     @POST @Consumes(MediaType.APPLICATION_JSON)
     public void resetPassword(@Context SecurityContext context,
                               PasswordRequest request) {
-        int personId = getUserId(context);
 
-        LOG.info("Resetting password for user: " + personId);
+        int personId;
+        if(isSet(request.getPasswordToken())) {
+            personId = db.getPersonIdForPasswordToken(request.getPasswordToken());
 
-        Credentials dbCreds = db.getCredentials(personId);
-        if (dbCreds != null && BCrypt.checkpw(request.getOldPassword(), dbCreds.getHashedPassword())) {
-            db.updatePassword(personId, BCrypt.hashpw(request.getNewPassword(), BCrypt.gensalt()));
+            if(personId == -1)
+                throw new NotFoundException();
         } else {
-            throw new NotAuthorizedException("Illegal password change request");
+            personId = getUserId(context);
+            Credentials dbCreds = db.getCredentials(personId);
+
+            if (dbCreds == null || !BCrypt.checkpw(request.getOldPassword(), dbCreds.getHashedPassword()))
+                throw new NotAuthorizedException("Illegal password change request");
         }
+
+        db.updatePassword(personId, BCrypt.hashpw(request.getNewPassword(), BCrypt.gensalt()));
+        LOG.info("Password updated by user.");
     }
 }

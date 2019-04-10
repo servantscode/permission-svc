@@ -10,6 +10,9 @@ public class Credentials {
     private boolean resetPassword;
 
     @JsonIgnore
+    private String resetToken;
+
+    @JsonIgnore
     private int roleId;
 
     @JsonIgnore //Don't let this out!
@@ -35,6 +38,9 @@ public class Credentials {
 
     public boolean isResetPassword() { return resetPassword; }
     public void setResetPassword(boolean resetPassword) { this.resetPassword = resetPassword; }
+
+    public String getResetToken() { return resetToken; }
+    public void setResetToken(String resetToken) { this.resetToken = resetToken; }
 
     public int getRoleId() { return roleId; }
     public void setRoleId(int roleId) { this.roleId = roleId; }

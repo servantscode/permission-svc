@@ -147,15 +147,38 @@ public class LoginDB extends DBAccess {
         }
     }
 
+    public int getPersonIdForPasswordToken(String passwordToken) {
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement("SELECT person_id FROM logins WHERE reset_token=?");
+        ){
+            stmt.setString(1, passwordToken);
+
+            int personId = -1;
+
+            try(ResultSet rs = stmt.executeQuery()) {
+                if(rs.next())
+                    personId = rs.getInt("person_id");
+
+                if(rs.next())
+                    throw new RuntimeException("Duplicative password tokens found!");
+            }
+
+            return personId;
+        } catch (SQLException e) {
+            throw new RuntimeException("Could not retrieve login information for password tokens : " + passwordToken, e);
+        }
+    }
+
     public boolean createLogin(Credentials creds) {
         try (Connection conn = getConnection();
-             PreparedStatement stmt = conn.prepareStatement("INSERT INTO logins(person_id, hashed_password, role_id, reset_password) VALUES (?, ?, (SELECT id FROM roles WHERE name=?), ?)");
+             PreparedStatement stmt = conn.prepareStatement("INSERT INTO logins(person_id, hashed_password, role_id, reset_password, reset_token) VALUES (?, ?, (SELECT id FROM roles WHERE name=?), ?, ?)");
         ){
 
             stmt.setInt(1, creds.getId());
             stmt.setString(2, creds.getHashedPassword());
             stmt.setString(3, creds.getRole());
             stmt.setBoolean(4, creds.isResetPassword());
+            stmt.setString(5, creds.getResetToken());
 
             return stmt.executeUpdate() > 0;
         } catch (SQLException e) {
@@ -165,12 +188,13 @@ public class LoginDB extends DBAccess {
 
     public boolean updateCredentials(Credentials creds) {
         try (Connection conn = getConnection();
-             PreparedStatement stmt = conn.prepareStatement("UPDATE logins SET role_id=(SELECT id FROM roles WHERE name=?), reset_password=? WHERE person_id=?");
+             PreparedStatement stmt = conn.prepareStatement("UPDATE logins SET role_id=(SELECT id FROM roles WHERE name=?), reset_password=?, reset_token=? WHERE person_id=?");
         ){
 
             stmt.setString(1, creds.getRole());
             stmt.setBoolean(2, creds.isResetPassword());
-            stmt.setInt(3, creds.getId());
+            stmt.setString(3, creds.getResetToken());
+            stmt.setInt(4, creds.getId());
 
             return stmt.executeUpdate() > 0;
         } catch (SQLException e) {
@@ -180,7 +204,7 @@ public class LoginDB extends DBAccess {
 
     public boolean updatePassword(int personId, String hashedPassword) {
         try (Connection conn = getConnection();
-             PreparedStatement stmt = conn.prepareStatement("UPDATE logins SET hashed_password=?, reset_password=false WHERE person_id=?");
+             PreparedStatement stmt = conn.prepareStatement("UPDATE logins SET hashed_password=?, reset_password=false, reset_token=NULL WHERE person_id=?");
         ){
 
             stmt.setString(1, hashedPassword);

@@ -14,6 +14,7 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.SecurityContext;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
@@ -124,6 +125,8 @@ public class CredentialSvc extends SCServiceBase {
         creds.setRole(request.getRole());
         creds.setHashedPassword(BCrypt.hashpw(request.getPassword(), BCrypt.gensalt()));
         creds.setResetPassword(request.isResetPassword());
+        if(request.isResetPassword())
+            creds.setResetToken(UUID.randomUUID().toString());
 
         if(db.createLogin(creds))
             return getCredentials(securityContext, creds.getId());
@@ -156,6 +159,8 @@ public class CredentialSvc extends SCServiceBase {
             creds.setId(request.getId());
             creds.setRole(request.getRole());
             creds.setResetPassword(request.isResetPassword());
+            if(request.isResetPassword())
+                creds.setResetToken(UUID.randomUUID().toString());
 
             updated |= db.updateCredentials(creds);
         }
