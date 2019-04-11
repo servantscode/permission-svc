@@ -5,16 +5,16 @@ import org.apache.logging.log4j.Logger;
 import org.servantscode.commons.rest.SCServiceBase;
 import org.servantscode.permission.*;
 import org.servantscode.permission.db.LoginDB;
-import org.springframework.security.crypto.bcrypt.BCrypt;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.SecurityContext;
-
 import java.util.UUID;
 
 import static org.servantscode.commons.StringUtils.isSet;
+import static org.servantscode.permission.PasswordProcessor.encryptPassword;
+import static org.servantscode.permission.PasswordProcessor.verifyPassword;
 
 @Path("/password")
 public class PasswordSvc extends SCServiceBase {
@@ -60,11 +60,11 @@ public class PasswordSvc extends SCServiceBase {
 
             Credentials dbCreds = db.getCredentials(personId);
 
-            if (dbCreds == null || !BCrypt.checkpw(request.getOldPassword(), dbCreds.getHashedPassword()))
+            if (dbCreds == null || !verifyPassword(request.getOldPassword(), dbCreds.getHashedPassword()))
                 throw new NotAuthorizedException("Illegal password change request");
         }
 
-        db.updatePassword(personId, BCrypt.hashpw(request.getNewPassword(), BCrypt.gensalt()));
+        db.updatePassword(personId, encryptPassword(request.getNewPassword()));
         LOG.info("Password updated by user.");
     }
 }

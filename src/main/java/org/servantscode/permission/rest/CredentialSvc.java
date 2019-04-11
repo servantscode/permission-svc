@@ -5,10 +5,11 @@ import org.apache.logging.log4j.Logger;
 import org.servantscode.commons.rest.PaginatedResponse;
 import org.servantscode.commons.rest.SCServiceBase;
 import org.servantscode.permission.Credentials;
+import org.servantscode.permission.EmailNotificationClient;
+import org.servantscode.permission.JWTGenerator;
 import org.servantscode.permission.PublicCredentials;
 import org.servantscode.permission.db.LoginDB;
 import org.servantscode.permission.db.RoleDB;
-import org.springframework.security.crypto.bcrypt.BCrypt;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
@@ -20,6 +21,7 @@ import java.util.stream.Collectors;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.servantscode.commons.StringUtils.isEmpty;
 import static org.servantscode.commons.StringUtils.isSet;
+import static org.servantscode.permission.PasswordProcessor.encryptPassword;
 
 @Path("/credentials")
 public class CredentialSvc extends SCServiceBase {
@@ -118,21 +120,28 @@ public class CredentialSvc extends SCServiceBase {
             throw new BadRequestException("No valid person specified");
         if(isEmpty(request.getRole()) || !new RoleDB().verifyRole(request.getRole()))
             throw new BadRequestException("No valid role specified");
-        if(isEmpty(request.getPassword())) //TODO: Password rules go here
+        if(isEmpty(request.getPassword()) && !request.isSendEmail()) //TODO: Password rules go here
             throw new BadRequestException("No password specified");
 
         Credentials creds = new Credentials();
         creds.setId(request.getId());
         creds.setRole(request.getRole());
-        creds.setHashedPassword(BCrypt.hashpw(request.getPassword(), BCrypt.gensalt()));
+        creds.setHashedPassword(encryptPassword(request.getPassword()));
         creds.setResetPassword(request.isResetPassword());
         if(request.isResetPassword())
             creds.setResetToken(UUID.randomUUID().toString());
 
-        if(db.createLogin(creds))
-            return getCredentials(securityContext, creds.getId());
-        else
+        if(db.createLogin(creds)) {
+            Credentials dbCreds = db.getCredentials(creds.getId());
+            if(request.isSendEmail()) {
+                dbCreds.setResetToken(creds.getResetToken());
+                sendEmail(dbCreds);
+            }
+
+            return dbCreds.toPublicCredentials();
+        } else {
             throw new WebApplicationException("Could not create credentials");
+        }
     }
 
     @PUT @Consumes(APPLICATION_JSON)
@@ -149,14 +158,14 @@ public class CredentialSvc extends SCServiceBase {
             throw new BadRequestException("No valid person specified");
 
         boolean updated = false;
-        if(!isEmpty(request.getPassword())) {
+        if(isSet(request.getPassword())) {
             //TODO: Password rules go here
-            String hashedPassword = BCrypt.hashpw(request.getPassword(), BCrypt.gensalt());
+            String hashedPassword = encryptPassword(request.getPassword());
             updated = db.updatePassword(request.getId(), hashedPassword);
         }
 
-        if(!isEmpty(request.getRole()) || request.isResetPassword()) {
-            Credentials creds = db.getCredentials(request.getId());
+        Credentials creds = db.getCredentials(request.getId());
+        if(isSet(request.getRole()) || request.isResetPassword()) {
             if(creds == null)
                 throw new BadRequestException("Could not update credentials");
 
@@ -172,6 +181,9 @@ public class CredentialSvc extends SCServiceBase {
         }
 
         if(!updated) throw new BadRequestException("Could not update credentials");
+
+        if(request.isSendEmail())
+            sendEmail(creds);
 
         return getCredentials(securityContext, request.getId());
     }
@@ -193,5 +205,15 @@ public class CredentialSvc extends SCServiceBase {
 
         if(!db.deleteLogin(personId))
             throw new NotFoundException();
+    }
+
+    // ----- Private -----
+    private void sendEmail(Credentials creds) {
+        if(isEmpty(creds.getEmail()) || isEmpty(creds.getResetToken()))
+            throw new IllegalArgumentException();
+
+        EmailNotificationClient emailClient = new EmailNotificationClient(JWTGenerator.systemToken());
+        emailClient.sendPasswordResetEmail(creds.getEmail(), creds.getResetToken());
+        LOG.info("Password email generated for: " + creds.getEmail());
     }
 }
