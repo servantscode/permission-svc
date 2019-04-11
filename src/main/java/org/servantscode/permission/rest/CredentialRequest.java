@@ -6,6 +6,7 @@ public class CredentialRequest {
     private String password;
     private String role;
     private boolean resetPassword;
+    private boolean sendEmail;
 
     public CredentialRequest() { }
 
@@ -24,4 +25,7 @@ public class CredentialRequest {
 
     public boolean isResetPassword() { return resetPassword; }
     public void setResetPassword(boolean resetPassword) { this.resetPassword = resetPassword; }
+
+    public boolean isSendEmail() { return sendEmail; }
+    public void setSendEmail(boolean sendEmail) { this.sendEmail = sendEmail; }
 }

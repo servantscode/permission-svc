@@ -19,6 +19,7 @@ import java.util.stream.Collectors;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.servantscode.commons.StringUtils.isEmpty;
+import static org.servantscode.commons.StringUtils.isSet;
 
 @Path("/credentials")
 public class CredentialSvc extends SCServiceBase {
@@ -155,12 +156,17 @@ public class CredentialSvc extends SCServiceBase {
         }
 
         if(!isEmpty(request.getRole()) || request.isResetPassword()) {
-            Credentials creds = new Credentials();
-            creds.setId(request.getId());
-            creds.setRole(request.getRole());
-            creds.setResetPassword(request.isResetPassword());
-            if(request.isResetPassword())
+            Credentials creds = db.getCredentials(request.getId());
+            if(creds == null)
+                throw new BadRequestException("Could not update credentials");
+
+            if(isSet(request.getRole()))
+                creds.setRole(request.getRole());
+
+            if(request.isResetPassword()) {
+                creds.setResetPassword(request.isResetPassword());
                 creds.setResetToken(UUID.randomUUID().toString());
+            }
 
             updated |= db.updateCredentials(creds);
         }
