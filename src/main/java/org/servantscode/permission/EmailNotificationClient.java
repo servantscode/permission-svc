@@ -1,6 +1,9 @@
 package org.servantscode.permission;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.glassfish.jersey.client.ClientConfig;
+import org.servantscode.commons.EnvProperty;
 
 import javax.ws.rs.client.*;
 import javax.ws.rs.core.MediaType;
@@ -12,12 +15,13 @@ import java.util.*;
 import static java.util.Arrays.asList;
 
 public class EmailNotificationClient {
+    private static final Logger LOG = LogManager.getLogger(EmailNotificationClient.class);
 
     final private Client client;
     final private WebTarget webTarget;
     final private String token;
 
-    private static final String APPLICATION_URL = "http://localhost:4200";
+    private static final String APPLICATION_URL =  EnvProperty.get("HOST_URL");
 
     private static final String SERVICE_URL = "http://email-svc:8080/rest/email";
 
@@ -28,6 +32,7 @@ public class EmailNotificationClient {
     }
 
     public void sendPasswordResetEmail(String to, String resetToken) {
+        LOG.debug("APPLICATION_URL: " + APPLICATION_URL);
         sendEmail("greg@servantscode.org", to, "Password reset requested",
                 "You password reset fairy is here. Click the link below to reset your password: <br/>" +
                         APPLICATION_URL + "/account/reset/" + resetToken);

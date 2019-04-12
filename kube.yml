@@ -41,6 +41,11 @@ spec:
             secretKeyRef:
               name: jwt-key
               key: jwt-key
+        - name: HOST_URL
+          valueFrom:
+            configMapKeyRef:
+              name: host-url
+              key: host-url
 ---
 kind: Service
 apiVersion: v1
