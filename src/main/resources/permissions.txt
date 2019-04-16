@@ -1,3 +1,13 @@
+admin.family.delete
+admin.login.create
+admin.login.delete
+admin.login.list
+admin.login.read
+admin.login.update
+admin.mail.config.delete
+admin.mail.config.read
+admin.mail.config.update
+admin.person.delete
 donation.create
 donation.delete
 donation.list
@@ -9,6 +19,7 @@ equipment.delete
 equipment.list
 equipment.read
 equipment.update
+email.send
 event.create
 event.delete
 event.list
@@ -20,13 +31,6 @@ family.list
 family.metrics
 family.read
 family.update
-admin.family.delete
-admin.login.create
-admin.login.delete
-admin.login.list
-admin.login.read
-admin.login.update
-admin.person.delete
 ministry.create
 ministry.delete
 ministry.enrollment.create
