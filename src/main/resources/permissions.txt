@@ -1,3 +1,5 @@
+admin.baptism.delete
+admin.baptism.update
 admin.family.delete
 admin.login.create
 admin.login.delete
@@ -8,6 +10,10 @@ admin.mail.config.delete
 admin.mail.config.read
 admin.mail.config.update
 admin.person.delete
+baptism.create
+baptism.list
+baptism.read
+baptism.update
 donation.create
 donation.delete
 donation.list
