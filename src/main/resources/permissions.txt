@@ -1,5 +1,7 @@
 admin.baptism.delete
 admin.baptism.update
+admin.confirmation.delete
+admin.confirmation.update
 admin.family.delete
 admin.login.create
 admin.login.delete
@@ -14,6 +16,10 @@ sacrament.baptism.create
 sacrament.baptism.list
 sacrament.baptism.read
 sacrament.baptism.update
+sacrament.confirmation.create
+sacrament.confirmation.list
+sacrament.confirmation.read
+sacrament.confirmation.update
 donation.create
 donation.delete
 donation.list
