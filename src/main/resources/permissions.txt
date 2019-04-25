@@ -2,6 +2,7 @@ admin.baptism.delete
 admin.baptism.update
 admin.confirmation.delete
 admin.confirmation.update
+admin.event.override
 admin.marriage.update
 admin.marriage.delete
 admin.family.delete
