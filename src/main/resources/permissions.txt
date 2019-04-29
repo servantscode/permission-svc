@@ -6,6 +6,7 @@ admin.event.override
 admin.marriage.update
 admin.marriage.delete
 admin.family.delete
+admin.fund.delete
 admin.login.create
 admin.login.delete
 admin.login.list
@@ -50,6 +51,10 @@ family.list
 family.metrics
 family.read
 family.update
+fund.create
+fund.list
+fund.read
+fund.update
 ministry.create
 ministry.delete
 ministry.enrollment.create
