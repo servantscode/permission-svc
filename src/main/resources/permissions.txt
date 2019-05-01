@@ -47,6 +47,7 @@ event.read
 event.update
 family.create
 family.delete
+family.export
 family.list
 family.metrics
 family.read
@@ -61,6 +62,7 @@ ministry.enrollment.create
 ministry.enrollment.delete
 ministry.enrollment.list
 ministry.enrollment.update
+ministry.export
 ministry.list
 ministry.read
 ministry.update
@@ -71,6 +73,7 @@ note.read
 note.update
 person.create
 person.delete
+person.export
 person.list
 person.metrics
 person.read
