@@ -30,6 +30,7 @@ sacrament.marriage.read
 sacrament.marriage.update
 donation.create
 donation.delete
+donation.export
 donation.list
 donation.metrics
 donation.read
