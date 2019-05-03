@@ -65,7 +65,12 @@ ministry.enrollment.list
 ministry.enrollment.update
 ministry.export
 ministry.list
+ministry.metrics
 ministry.read
+ministry.role.create
+ministry.role.delete
+ministry.role.list
+ministry.role.update
 ministry.update
 note.create
 note.delete
