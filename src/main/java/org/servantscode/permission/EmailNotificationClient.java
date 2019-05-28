@@ -3,7 +3,9 @@ package org.servantscode.permission;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.glassfish.jersey.client.ClientConfig;
+import org.servantscode.commons.ConfigUtils;
 import org.servantscode.commons.EnvProperty;
+import org.servantscode.commons.db.ConfigDB;
 
 import javax.ws.rs.client.*;
 import javax.ws.rs.core.MediaType;
@@ -33,8 +35,10 @@ public class EmailNotificationClient {
 
     public void sendPasswordResetEmail(String to, String resetToken) {
         LOG.debug("APPLICATION_URL: " + APPLICATION_URL);
-        sendEmail("greg@servantscode.org", to, "Password reset requested",
-                "You password reset fairy is here. Click the link below to reset your password: <br/>" +
+        String from = ConfigUtils.getConfiguration("mail.user.account");
+        sendEmail(from, to, "Password reset requested",
+                "We've received a request to set or reset your password.<br/><br/>" +
+                        "Click the link below to set a new password for your account: <br/>" +
                         APPLICATION_URL + "/account/reset/" + resetToken);
     }
 
