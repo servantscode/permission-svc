@@ -2,7 +2,6 @@ package org.servantscode.permission.rest;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.omg.CosNaming.NamingContextPackage.NotFound;
 import org.servantscode.commons.rest.PaginatedResponse;
 import org.servantscode.commons.rest.SCServiceBase;
 import org.servantscode.permission.Role;
