@@ -20,6 +20,9 @@ admin.mail.config.delete
 admin.mail.config.read
 admin.mail.config.update
 admin.person.delete
+admin.preference.create
+admin.preference.delete
+admin.preference.update
 sacrament.baptism.create
 sacrament.baptism.list
 sacrament.baptism.read
@@ -101,6 +104,11 @@ pledge.list
 pledge.metrics
 pledge.read
 pledge.update
+preference.list
+preference.metrics
+preference.update
+preference.read
+sacrament.baptism.create
 private.note.create
 private.note.delete
 private.note.list
