@@ -22,6 +22,8 @@ admin.mail.config.update
 admin.person.delete
 admin.preference.create
 admin.preference.delete
+admin.preference.list
+admin.preference.read
 admin.preference.update
 sacrament.baptism.create
 sacrament.baptism.list
