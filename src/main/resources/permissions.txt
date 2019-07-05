@@ -116,6 +116,8 @@ private.note.delete
 private.note.list
 private.note.read
 private.note.update
+relationship.list
+relationship.update
 reservation.create
 reservation.delete
 reservation.list
