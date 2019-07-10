@@ -3,6 +3,8 @@ package org.servantscode.permission.db;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.servantscode.commons.db.DBAccess;
+import org.servantscode.commons.search.QueryBuilder;
+import org.servantscode.commons.search.SearchParser;
 import org.servantscode.permission.Credentials;
 
 import java.sql.Connection;
@@ -10,6 +12,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -22,62 +25,77 @@ public class LoginDB extends DBAccess {
     private static final String[] RESET_PASSWORD = new String[] {"password.reset"};
 
     private PermissionDB permDB;
+    private SearchParser<Credentials> searchParser;
+
+    private static HashMap<String, String> FIELD_MAP;
+    static {
+        FIELD_MAP = new HashMap<>(8);
+        FIELD_MAP.put("name", "p.name");
+    }
 
     public LoginDB() {
         permDB = new PermissionDB();
+        searchParser = new SearchParser<>(Credentials.class, "name", FIELD_MAP);
     }
 
-
     public int getAccessCount(String search, boolean includeSystem) {
-        String sql = format("SELECT count(1) FROM logins l, people p, roles r " +
-                            "WHERE p.id = l.person_id AND l.role_id = r.id%s%s",
-                            optionalWhereClause(search),
-                            includeSystem? "": " AND r.id <> 1");
+        QueryBuilder query = count().from("logins l", "people p", "roles r")
+                .where("p.id=l.person_id").where("l.role_id=r.id")
+                .search(searchParser.parse(search)).inOrg("p.org_id").inOrg("r.org_id");
+        if(!includeSystem)
+            query.where("r.id <> 1");
+//        String sql = format("SELECT count(1) FROM logins l, people p, roles r " +
+//                            "WHERE p.id = l.person_id AND l.role_id = r.id%s%s",
+//                            optionalWhereClause(search),
+//                            includeSystem? "": " AND r.id <> 1");
         try (Connection conn = getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+             PreparedStatement stmt = query.prepareStatement(conn);
+             ResultSet rs = stmt.executeQuery()) {
 
-            try(ResultSet rs = stmt.executeQuery()) {
-                if (rs.next())
-                    return rs.getInt(1);
-            }
+            return rs.next()? rs.getInt(1): 0;
         } catch (SQLException e) {
             throw new RuntimeException("Could not retrieve role count '" + search + "'", e);
         }
-        return 0;
     }
 
     public int getRoleCount(String role, String search) {
-        String sql = format("SELECT count(1) FROM logins l, people p, roles r " +
-                            "WHERE p.id = l.person_id AND l.role_id = r.id AND r.name=?%s",
-                            optionalWhereClause(search));
+        QueryBuilder query = count().from("logins l", "people p", "roles r")
+                .where("p.id=l.person_id").where("l.role_id=r.id").where("r.name=?", role)
+                .search(searchParser.parse(search)).inOrg("p.org_id").inOrg("r.org_id");
+//        String sql = format("SELECT count(1) FROM logins l, people p, roles r " +
+//                            "WHERE p.id = l.person_id AND l.role_id = r.id AND r.name=?%s",
+//                            optionalWhereClause(search));
         try (Connection conn = getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+             PreparedStatement stmt = query.prepareStatement(conn);
+             ResultSet rs = stmt.executeQuery()) {
 
-            stmt.setString(1, role);
-            try(ResultSet rs = stmt.executeQuery()) {
-                if (rs.next())
-                    return rs.getInt(1);
-            }
-        } catch (SQLException e) {
+            return rs.next()? rs.getInt(1): 0;
+    } catch (SQLException e) {
             throw new RuntimeException("Could not retrieve role count '" + search + "'", e);
         }
-        return 0;
+    }
+
+    private QueryBuilder baseQuery() {
+        return select("l.*", "p.name AS name", "r.name AS role", "p.email")
+                .from("logins l", "people p", "roles r")
+                .where("p.id = l.person_id").where("l.role_id = r.id").inOrg("p.org_id").inOrg("r.org_id");
     }
 
     public List<Credentials> getCredentials(int start, int count, String sortField, String search, boolean includeSystem) {
-        String sql = format("SELECT l.*, p.name AS name, r.name AS role, p.email " +
-                        "FROM logins l, people p, roles r " +
-                        "WHERE p.id = l.person_id AND l.role_id=r.id%s%s " +
-                        "ORDER BY %s LIMIT ? OFFSET ?",
-                        optionalWhereClause(search),
-                        includeSystem? "": " AND r.id <> 1",
-                        sortField);
+//        String sql = format("SELECT l.*, p.name AS name, r.name AS role, p.email " +
+//                        "FROM logins l, people p, roles r " +
+//                        "WHERE p.id = l.person_id AND l.role_id=r.id%s%s " +
+//                        "ORDER BY %s LIMIT ? OFFSET ?",
+//                        optionalWhereClause(search),
+//                        includeSystem? "": " AND r.id <> 1",
+//                        sortField);
+        QueryBuilder query = baseQuery().search(searchParser.parse(search));
+        if(!includeSystem)
+            query.where("r.id <> 1");
+        query.sort(sortField).limit(count).offset(start);
 
         try (Connection conn = getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql);
-        ){
-            stmt.setInt(1, count);
-            stmt.setInt(2, start);
+             PreparedStatement stmt = query.prepareStatement(conn)) {
 
             return processResults(stmt);
         } catch (SQLException e) {
@@ -85,61 +103,55 @@ public class LoginDB extends DBAccess {
         }
     }
 
+
     public Credentials getCredentials(String email) {
+        QueryBuilder query = baseQuery().where("p.email=?", email);
+//        PreparedStatement stmt = conn.prepareStatement("SELECT l.*, p.name AS name, r.name AS role, p.email " +
+//                "FROM logins l, people p, roles r " +
+//                "WHERE p.id = l.person_id AND l.role_id = r.id AND p.email=?");
         try (Connection conn = getConnection();
-             PreparedStatement stmt = conn.prepareStatement("SELECT l.*, p.name AS name, r.name AS role, p.email " +
-                                                                 "FROM logins l, people p, roles r " +
-                                                                 "WHERE p.id = l.person_id AND l.role_id = r.id AND p.email=?");
-        ){
-            stmt.setString(1, email);
+             PreparedStatement stmt = query.prepareStatement(conn) ){
 
             List<Credentials> creds = processResults(stmt);
-            if(creds.isEmpty())
-                return null;
-
             if(creds.size() > 1)
                 throw new RuntimeException("Duplicative email logins found!");
 
-            return creds.get(0);
+            return firstOrNull(creds);
         } catch (SQLException e) {
             throw new RuntimeException("Could not retrieve login information for: " + email, e);
         }
     }
 
     public Credentials getCredentials(int personId) {
+        QueryBuilder query = baseQuery().where("l.person_id=?", personId);
+//        PreparedStatement stmt = conn.prepareStatement("SELECT l.*, p.name AS name, r.name AS role, p.email " +
+//                "FROM logins l, people p, roles r " +
+//                "WHERE p.id = l.person_id AND l.role_id=r.id AND l.person_id=?");
         try (Connection conn = getConnection();
-             PreparedStatement stmt = conn.prepareStatement("SELECT l.*, p.name AS name, r.name AS role, p.email " +
-                     "FROM logins l, people p, roles r " +
-                     "WHERE p.id = l.person_id AND l.role_id=r.id AND l.person_id=?");
-        ){
-            stmt.setInt(1, personId);
+             PreparedStatement stmt = query.prepareStatement(conn) ){
 
             List<Credentials> creds = processResults(stmt);
-            if(creds.isEmpty())
-                return null;
-
             if(creds.size() > 1)
                 throw new RuntimeException("Duplicative email logins found!");
 
-            return creds.get(0);
+            return firstOrNull(creds);
         } catch (SQLException e) {
             throw new RuntimeException("Could not retrieve login information for person: " + personId, e);
         }
     }
 
     public List<Credentials> getCredentialsForRole(String role, int start, int count, String sortField, String search) {
-        String sql = format("SELECT l.*, p.name AS name, r.name AS role, p.email " +
-                            "FROM logins l, people p, roles r " +
-                            "WHERE p.id = l.person_id AND l.role_id=r.id AND r.name=?%s " +
-                            "ORDER BY %s LIMIT ? OFFSET ?",
-                            optionalWhereClause(search), sortField);
+//        String sql = format("SELECT l.*, p.name AS name, r.name AS role, p.email " +
+//                            "FROM logins l, people p, roles r " +
+//                            "WHERE p.id = l.person_id AND l.role_id=r.id AND r.name=?%s " +
+//                            "ORDER BY %s LIMIT ? OFFSET ?",
+//                            optionalWhereClause(search), sortField);
 
+        QueryBuilder query = baseQuery().search(searchParser.parse(search)).where("r.name=?", role)
+                .sort(sortField).limit(count).offset(start);
+        LOG.debug("Generated query: " + query.getSql());
         try (Connection conn = getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql);
-        ){
-            stmt.setString(1, role);
-            stmt.setInt(2, count);
-            stmt.setInt(3, start);
+             PreparedStatement stmt = query.prepareStatement(conn) ){
 
             return processResults(stmt);
         } catch (SQLException e) {
@@ -148,20 +160,15 @@ public class LoginDB extends DBAccess {
     }
 
     public int getPersonIdForPasswordToken(String passwordToken) {
+        QueryBuilder query = select("person_id").from("logins")
+                .where("reset_token=?", passwordToken).inOrg();
         try (Connection conn = getConnection();
-             PreparedStatement stmt = conn.prepareStatement("SELECT person_id FROM logins WHERE reset_token=?");
-        ){
-            stmt.setString(1, passwordToken);
+             PreparedStatement stmt = query.prepareStatement(conn);
+             ResultSet rs = stmt.executeQuery()) {
 
-            int personId = -1;
-
-            try(ResultSet rs = stmt.executeQuery()) {
-                if(rs.next())
-                    personId = rs.getInt("person_id");
-
-                if(rs.next())
-                    throw new RuntimeException("Duplicative password tokens found!");
-            }
+            int personId = rs.next()? rs.getInt("person_id"): -1;
+            if(rs.next())
+                throw new RuntimeException("Duplicative password tokens found!");
 
             return personId;
         } catch (SQLException e) {
@@ -171,8 +178,7 @@ public class LoginDB extends DBAccess {
 
     public boolean createLogin(Credentials creds) {
         try (Connection conn = getConnection();
-             PreparedStatement stmt = conn.prepareStatement("INSERT INTO logins(person_id, hashed_password, role_id, reset_password, reset_token) VALUES (?, ?, (SELECT id FROM roles WHERE name=?), ?, ?)");
-        ){
+             PreparedStatement stmt = conn.prepareStatement("INSERT INTO logins(person_id, hashed_password, role_id, reset_password, reset_token) VALUES (?, ?, (SELECT id FROM roles WHERE name=?), ?, ?)")){
 
             stmt.setInt(1, creds.getId());
             stmt.setString(2, creds.getHashedPassword());
@@ -188,8 +194,7 @@ public class LoginDB extends DBAccess {
 
     public boolean updateCredentials(Credentials creds) {
         try (Connection conn = getConnection();
-             PreparedStatement stmt = conn.prepareStatement("UPDATE logins SET role_id=(SELECT id FROM roles WHERE name=?), reset_password=?, reset_token=? WHERE person_id=?");
-        ){
+             PreparedStatement stmt = conn.prepareStatement("UPDATE logins SET role_id=(SELECT id FROM roles WHERE name=?), reset_password=?, reset_token=? WHERE person_id=?")){
 
             stmt.setString(1, creds.getRole());
             stmt.setBoolean(2, creds.isResetPassword());
@@ -252,9 +257,5 @@ public class LoginDB extends DBAccess {
 
             return results;
         }
-    }
-
-    private String optionalWhereClause(String search) {
-        return !isEmpty(search) ? format(" AND p.name ILIKE '%%%s%%'", search.replace("'", "''")) : "";
     }
 }

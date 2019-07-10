@@ -26,16 +26,6 @@ public class RoleSvc extends SCServiceBase {
         db = new RoleDB();
     }
 
-    @GET @Path("/autocomplete") @Produces(APPLICATION_JSON)
-    public List<String> getRolesNames(@QueryParam("count") @DefaultValue("100") int count,
-                                      @QueryParam("partial_name") @DefaultValue("") String nameSearch,
-                                      @Context SecurityContext securityContext) {
-
-        verifyUserAccess("admin.role.list");
-
-        return db.getRoleNames(nameSearch, count, securityContext.isUserInRole("system"));
-    }
-
     @GET @Produces(MediaType.APPLICATION_JSON)
     public PaginatedResponse<Role> getRoles(@QueryParam("start") @DefaultValue("0") int start,
                                             @QueryParam("count") @DefaultValue("10") int count,
