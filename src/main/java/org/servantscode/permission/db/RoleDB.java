@@ -7,6 +7,7 @@ import org.servantscode.commons.db.DBAccess;
 import org.servantscode.commons.search.QueryBuilder;
 import org.servantscode.commons.search.SearchParser;
 import org.servantscode.commons.security.OrganizationContext;
+import org.servantscode.commons.security.SCSecurityContext;
 import org.servantscode.permission.Role;
 
 import java.sql.*;
@@ -16,6 +17,7 @@ import java.util.List;
 
 import static java.lang.String.format;
 import static org.servantscode.commons.StringUtils.isEmpty;
+import static org.servantscode.commons.security.SCSecurityContext.SYSTEM;
 
 public class RoleDB extends DBAccess {
     private static Logger LOG = LogManager.getLogger(RoleDB.class);
@@ -30,9 +32,7 @@ public class RoleDB extends DBAccess {
 
     public int getCount(String search, boolean includeSystem) {
 //        String sql = format("Select count(1) from roles%s", optionalWhereClause(search, includeSystem));
-        QueryBuilder query = count().from("roles").search(searchParser.parse(search)).inOrg();
-        if(!includeSystem)
-            query.where("id <> 1");
+        QueryBuilder query = count().from("roles").search(searchParser.parse(search)).inOrg(includeSystem);
 
         try (Connection conn = getConnection();
              PreparedStatement stmt = query.prepareStatement(conn);
@@ -45,10 +45,8 @@ public class RoleDB extends DBAccess {
     }
 
     public List<Role> getRoles(String search, String sortField, int start, int count, boolean includeSystem) {
-        QueryBuilder query = selectAll().from("roles").search(searchParser.parse(search)).inOrg()
+        QueryBuilder query = selectAll().from("roles").search(searchParser.parse(search)).inOrg(includeSystem)
                 .sort(sortField).limit(count).offset(start);
-        if(!includeSystem)
-            query.where("id <> 1");
 //        String sql = format("SELECT * FROM roles%s ORDER BY %s LIMIT ? OFFSET ?", optionalWhereClause(search, includeSystem), sortField);
         try (Connection conn = getConnection();
              PreparedStatement stmt = query.prepareStatement(conn)){
@@ -60,7 +58,7 @@ public class RoleDB extends DBAccess {
     }
 
     public Role getRole(int id) {
-        QueryBuilder query = selectAll().from("roles").withId(id).inOrg();
+        QueryBuilder query = selectAll().from("roles").withId(id).inOrg(true);
 //        String sql = "SELECT * FROM roles WHERE id=?";
         try (Connection conn = getConnection();
              PreparedStatement stmt = query.prepareStatement(conn)) {
@@ -69,11 +67,10 @@ public class RoleDB extends DBAccess {
         } catch (SQLException e) {
             throw new RuntimeException("Could not retrieve rule: " + id, e);
         }
-
     }
 
     public boolean verifyRole(String role) {
-        QueryBuilder query = selectAll().from("roles").where("name=?", role).inOrg();
+        QueryBuilder query = selectAll().from("roles").where("name=?", role).inOrg(role.equals(SYSTEM));
         try (Connection conn = getConnection();
              PreparedStatement stmt = query.prepareStatement(conn)){
 

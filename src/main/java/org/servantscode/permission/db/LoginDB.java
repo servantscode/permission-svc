@@ -18,6 +18,7 @@ import java.util.List;
 
 import static java.lang.String.format;
 import static org.servantscode.commons.StringUtils.isEmpty;
+import static org.servantscode.commons.security.SCSecurityContext.SYSTEM;
 
 public class LoginDB extends DBAccess {
     private static Logger LOG = LogManager.getLogger(LoginDB.class);
@@ -41,9 +42,8 @@ public class LoginDB extends DBAccess {
     public int getAccessCount(String search, boolean includeSystem) {
         QueryBuilder query = count().from("logins l", "people p", "roles r")
                 .where("p.id=l.person_id").where("l.role_id=r.id")
-                .search(searchParser.parse(search)).inOrg("p.org_id").inOrg("r.org_id");
-        if(!includeSystem)
-            query.where("r.id <> 1");
+                .search(searchParser.parse(search))
+                .inOrg("p.org_id", includeSystem).inOrg("r.org_id", includeSystem);
 //        String sql = format("SELECT count(1) FROM logins l, people p, roles r " +
 //                            "WHERE p.id = l.person_id AND l.role_id = r.id%s%s",
 //                            optionalWhereClause(search),
@@ -59,9 +59,12 @@ public class LoginDB extends DBAccess {
     }
 
     public int getRoleCount(String role, String search) {
+        boolean includeSystem = !role.equals(SYSTEM);
+
         QueryBuilder query = count().from("logins l", "people p", "roles r")
                 .where("p.id=l.person_id").where("l.role_id=r.id").where("r.name=?", role)
-                .search(searchParser.parse(search)).inOrg("p.org_id").inOrg("r.org_id");
+                .search(searchParser.parse(search))
+                .inOrg("p.org_id", includeSystem).inOrg("r.org_id", includeSystem);
 //        String sql = format("SELECT count(1) FROM logins l, people p, roles r " +
 //                            "WHERE p.id = l.person_id AND l.role_id = r.id AND r.name=?%s",
 //                            optionalWhereClause(search));
@@ -75,10 +78,11 @@ public class LoginDB extends DBAccess {
         }
     }
 
-    private QueryBuilder baseQuery() {
+    private QueryBuilder baseQuery(boolean includeSystem) {
         return select("l.*", "p.name AS name", "r.name AS role", "p.email")
-                .from("logins l", "people p", "roles r")
-                .where("p.id = l.person_id").where("l.role_id = r.id").inOrg("p.org_id").inOrg("r.org_id");
+            .from("logins l", "people p", "roles r")
+            .where("p.id = l.person_id").where("l.role_id = r.id")
+            .inOrg("p.org_id", includeSystem).inOrg("r.org_id", includeSystem);
     }
 
     public List<Credentials> getCredentials(int start, int count, String sortField, String search, boolean includeSystem) {
@@ -89,10 +93,8 @@ public class LoginDB extends DBAccess {
 //                        optionalWhereClause(search),
 //                        includeSystem? "": " AND r.id <> 1",
 //                        sortField);
-        QueryBuilder query = baseQuery().search(searchParser.parse(search));
-        if(!includeSystem)
-            query.where("r.id <> 1");
-        query.sort(sortField).limit(count).offset(start);
+        QueryBuilder query = baseQuery(includeSystem).search(searchParser.parse(search))
+            .sort(sortField).limit(count).offset(start);
 
         try (Connection conn = getConnection();
              PreparedStatement stmt = query.prepareStatement(conn)) {
@@ -105,7 +107,7 @@ public class LoginDB extends DBAccess {
 
 
     public Credentials getCredentials(String email) {
-        QueryBuilder query = baseQuery().where("p.email=?", email);
+        QueryBuilder query = baseQuery(true).where("p.email=?", email);
 //        PreparedStatement stmt = conn.prepareStatement("SELECT l.*, p.name AS name, r.name AS role, p.email " +
 //                "FROM logins l, people p, roles r " +
 //                "WHERE p.id = l.person_id AND l.role_id = r.id AND p.email=?");
@@ -123,7 +125,7 @@ public class LoginDB extends DBAccess {
     }
 
     public Credentials getCredentials(int personId) {
-        QueryBuilder query = baseQuery().where("l.person_id=?", personId);
+        QueryBuilder query = baseQuery(true).where("l.person_id=?", personId);
 //        PreparedStatement stmt = conn.prepareStatement("SELECT l.*, p.name AS name, r.name AS role, p.email " +
 //                "FROM logins l, people p, roles r " +
 //                "WHERE p.id = l.person_id AND l.role_id=r.id AND l.person_id=?");
@@ -147,7 +149,8 @@ public class LoginDB extends DBAccess {
 //                            "ORDER BY %s LIMIT ? OFFSET ?",
 //                            optionalWhereClause(search), sortField);
 
-        QueryBuilder query = baseQuery().search(searchParser.parse(search)).where("r.name=?", role)
+        QueryBuilder query = baseQuery(role.equals(SYSTEM))
+                .search(searchParser.parse(search)).where("r.name=?", role)
                 .sort(sortField).limit(count).offset(start);
         LOG.debug("Generated query: " + query.getSql());
         try (Connection conn = getConnection();
