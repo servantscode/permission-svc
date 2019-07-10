@@ -5,6 +5,7 @@ import org.apache.logging.log4j.Logger;
 import org.servantscode.commons.db.DBAccess;
 import org.servantscode.commons.search.QueryBuilder;
 import org.servantscode.commons.search.SearchParser;
+import org.servantscode.commons.security.OrganizationContext;
 import org.servantscode.permission.Credentials;
 
 import java.sql.Connection;
@@ -164,7 +165,7 @@ public class LoginDB extends DBAccess {
 
     public int getPersonIdForPasswordToken(String passwordToken) {
         QueryBuilder query = select("person_id").from("logins")
-                .where("reset_token=?", passwordToken).inOrg();
+                .where("reset_token=?", passwordToken);
         try (Connection conn = getConnection();
              PreparedStatement stmt = query.prepareStatement(conn);
              ResultSet rs = stmt.executeQuery()) {
@@ -181,13 +182,14 @@ public class LoginDB extends DBAccess {
 
     public boolean createLogin(Credentials creds) {
         try (Connection conn = getConnection();
-             PreparedStatement stmt = conn.prepareStatement("INSERT INTO logins(person_id, hashed_password, role_id, reset_password, reset_token) VALUES (?, ?, (SELECT id FROM roles WHERE name=?), ?, ?)")){
+             PreparedStatement stmt = conn.prepareStatement("INSERT INTO logins(person_id, hashed_password, role_id, reset_password, reset_token) VALUES (?, ?, (SELECT id FROM roles WHERE name=? AND org_id=?), ?, ?)")){
 
             stmt.setInt(1, creds.getId());
             stmt.setString(2, creds.getHashedPassword());
             stmt.setString(3, creds.getRole());
-            stmt.setBoolean(4, creds.isResetPassword());
-            stmt.setString(5, creds.getResetToken());
+            stmt.setInt(4, OrganizationContext.orgId());
+            stmt.setBoolean(5, creds.isResetPassword());
+            stmt.setString(6, creds.getResetToken());
 
             return stmt.executeUpdate() > 0;
         } catch (SQLException e) {
@@ -197,12 +199,13 @@ public class LoginDB extends DBAccess {
 
     public boolean updateCredentials(Credentials creds) {
         try (Connection conn = getConnection();
-             PreparedStatement stmt = conn.prepareStatement("UPDATE logins SET role_id=(SELECT id FROM roles WHERE name=?), reset_password=?, reset_token=? WHERE person_id=?")){
+             PreparedStatement stmt = conn.prepareStatement("UPDATE logins SET role_id=(SELECT id FROM roles WHERE name=? AND org_id=?), reset_password=?, reset_token=? WHERE person_id=?")){
 
             stmt.setString(1, creds.getRole());
-            stmt.setBoolean(2, creds.isResetPassword());
-            stmt.setString(3, creds.getResetToken());
-            stmt.setInt(4, creds.getId());
+            stmt.setInt(2, OrganizationContext.orgId());
+            stmt.setBoolean(3, creds.isResetPassword());
+            stmt.setString(4, creds.getResetToken());
+            stmt.setInt(5, creds.getId());
 
             return stmt.executeUpdate() > 0;
         } catch (SQLException e) {

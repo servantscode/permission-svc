@@ -6,6 +6,7 @@ import org.glassfish.jersey.client.ClientConfig;
 import org.servantscode.commons.ConfigUtils;
 import org.servantscode.commons.EnvProperty;
 import org.servantscode.commons.db.ConfigDB;
+import org.servantscode.commons.security.OrganizationContext;
 
 import javax.ws.rs.client.*;
 import javax.ws.rs.core.MediaType;
@@ -85,6 +86,7 @@ public class EmailNotificationClient {
 
         return target
                 .request(MediaType.APPLICATION_JSON)
+                .header("x-sc-org", OrganizationContext.getOrganization().getHostName())
                 .header("Authorization", "Bearer " + token);
     }
 }
