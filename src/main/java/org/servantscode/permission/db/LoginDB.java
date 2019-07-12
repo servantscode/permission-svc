@@ -181,8 +181,10 @@ public class LoginDB extends DBAccess {
     }
 
     public boolean createLogin(Credentials creds) {
+        String sql = "INSERT INTO logins(person_id, hashed_password, role_id, reset_password, reset_token) " +
+                "VALUES (?, ?, (SELECT id FROM roles WHERE name=? AND (org_id=? OR org_id IS NULL)), ?, ?)";
         try (Connection conn = getConnection();
-             PreparedStatement stmt = conn.prepareStatement("INSERT INTO logins(person_id, hashed_password, role_id, reset_password, reset_token) VALUES (?, ?, (SELECT id FROM roles WHERE name=? AND org_id=?), ?, ?)")){
+             PreparedStatement stmt = conn.prepareStatement(sql)){
 
             stmt.setInt(1, creds.getId());
             stmt.setString(2, creds.getHashedPassword());
@@ -198,8 +200,12 @@ public class LoginDB extends DBAccess {
     }
 
     public boolean updateCredentials(Credentials creds) {
+        String sql ="UPDATE logins " +
+                "SET role_id=(SELECT id FROM roles WHERE name=? AND (org_id=? OR org_id IS NULL)), " +
+                "reset_password=?, reset_token=? " +
+                "WHERE person_id=?";
         try (Connection conn = getConnection();
-             PreparedStatement stmt = conn.prepareStatement("UPDATE logins SET role_id=(SELECT id FROM roles WHERE name=? AND org_id=?), reset_password=?, reset_token=? WHERE person_id=?")){
+             PreparedStatement stmt = conn.prepareStatement(sql)){
 
             stmt.setString(1, creds.getRole());
             stmt.setInt(2, OrganizationContext.orgId());

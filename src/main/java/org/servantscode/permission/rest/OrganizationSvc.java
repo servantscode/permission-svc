@@ -6,6 +6,7 @@ import org.servantscode.commons.Organization;
 import org.servantscode.commons.db.OrganizationDB;
 import org.servantscode.commons.rest.PaginatedResponse;
 import org.servantscode.commons.rest.SCServiceBase;
+import org.servantscode.commons.security.OrganizationContext;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
@@ -47,11 +48,23 @@ public class OrganizationSvc extends SCServiceBase {
 
     @GET @Path("/{id}") @Produces(MediaType.APPLICATION_JSON)
     public Organization getOrganization(@PathParam("id") int id) {
+        LOG.debug("Getting org by id: " + id);
         verifyUserAccess("system.organization.read");
         try {
             return db.getOrganization(id);
         } catch (Throwable t) {
             LOG.error("Retrieving organization failed:", t);
+            throw t;
+        }
+    }
+
+    @GET @Path("/active") @Produces(MediaType.APPLICATION_JSON)
+    public Organization getActiveOrganization() {
+        LOG.debug("Getting active org");
+        try {
+            return OrganizationContext.getOrganization();
+        } catch (Throwable t) {
+            LOG.error("Retrieving active organization failed:", t);
             throw t;
         }
     }
@@ -78,6 +91,19 @@ public class OrganizationSvc extends SCServiceBase {
         return db.update(org);
     }
 
+    @PUT @Path("/{id}/photo") @Consumes(MediaType.TEXT_PLAIN)
+    public void attachPhoto(@PathParam("id") int id,
+                            String guid) {
+        verifyUserAccess("admin.organization.update");
+
+        LOG.debug("Attaching photo: " + guid);
+        try {
+            db.attchPhoto(id, guid);
+        } catch (Throwable t) {
+            LOG.error("Attaching photo to organization failed.", t);
+            throw t;
+        }
+    }
     @DELETE @Path("/{orgId}")
     public void deleteOrganization(@PathParam("orgId") int orgId) {
         verifyUserAccess("system.organization.delete");

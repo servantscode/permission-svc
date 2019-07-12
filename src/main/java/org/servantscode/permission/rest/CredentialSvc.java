@@ -72,7 +72,6 @@ public class CredentialSvc extends SCServiceBase {
         if(!securityContext.isUserInRole("system") && role.equals("system"))
             throw new BadRequestException();
 
-
         try {
             int totalCredentials = db.getRoleCount(role, search);
 

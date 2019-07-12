@@ -2,6 +2,7 @@ package org.servantscode.permission;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.ThreadContext;
 import org.glassfish.jersey.client.ClientConfig;
 import org.servantscode.commons.ConfigUtils;
 import org.servantscode.commons.EnvProperty;
@@ -87,6 +88,7 @@ public class EmailNotificationClient {
         return target
                 .request(MediaType.APPLICATION_JSON)
                 .header("x-sc-org", OrganizationContext.getOrganization().getHostName())
+                .header("x-sc-transaction-id", ThreadContext.get("transaction.id"))
                 .header("Authorization", "Bearer " + token);
     }
 }

@@ -19,7 +19,9 @@ admin.login.update
 admin.mail.config.delete
 admin.mail.config.read
 admin.mail.config.update
+admin.organization.update
 admin.person.delete
+admin.photo.create
 admin.preference.create
 admin.preference.delete
 admin.preference.list
