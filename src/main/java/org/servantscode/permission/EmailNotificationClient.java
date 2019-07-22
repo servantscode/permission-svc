@@ -17,6 +17,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 import static java.util.Arrays.asList;
+import static org.servantscode.commons.StringUtils.isSet;
 
 public class EmailNotificationClient {
     private static final Logger LOG = LogManager.getLogger(EmailNotificationClient.class);
@@ -36,12 +37,13 @@ public class EmailNotificationClient {
     }
 
     public void sendPasswordResetEmail(String to, String resetToken) {
-        LOG.debug("APPLICATION_URL: " + APPLICATION_URL);
+        String applicationUrl = getHost();
+        LOG.debug("APPLICATION_URL: " + applicationUrl);
         String from = ConfigUtils.getConfiguration("mail.user.account");
         sendEmail(from, to, "Password reset requested",
                 "We've received a request to set or reset your password.<br/><br/>" +
                         "Click the link below to set a new password for your account: <br/>" +
-                        APPLICATION_URL + "/account/reset/" + resetToken);
+                        applicationUrl + "/account/reset/" + resetToken);
     }
 
     public void sendEmail(String from, String to, String subject, String message ) {
@@ -60,6 +62,9 @@ public class EmailNotificationClient {
     }
 
     // ----- Private -----
+    private String getHost() {
+        return APPLICATION_URL.replace("{org}", OrganizationContext.getOrganization().getHostName());
+    }
 
     private void translateDates(Map<String, Object> data) {
         data.entrySet().forEach( (entry) -> {
