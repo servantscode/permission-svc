@@ -33,6 +33,7 @@ public class LoginDB extends DBAccess {
     static {
         FIELD_MAP = new HashMap<>(8);
         FIELD_MAP.put("name", "p.name");
+        FIELD_MAP.put("role", "r.name");
     }
 
     public LoginDB() {
@@ -45,10 +46,6 @@ public class LoginDB extends DBAccess {
                 .where("p.id=l.person_id").where("l.role_id=r.id")
                 .search(searchParser.parse(search))
                 .inOrg("p.org_id", includeSystem).inOrg("r.org_id", includeSystem);
-//        String sql = format("SELECT count(1) FROM logins l, people p, roles r " +
-//                            "WHERE p.id = l.person_id AND l.role_id = r.id%s%s",
-//                            optionalWhereClause(search),
-//                            includeSystem? "": " AND r.id <> 1");
         try (Connection conn = getConnection();
              PreparedStatement stmt = query.prepareStatement(conn);
              ResultSet rs = stmt.executeQuery()) {
@@ -66,9 +63,6 @@ public class LoginDB extends DBAccess {
                 .where("p.id=l.person_id").where("l.role_id=r.id").where("r.name=?", role)
                 .search(searchParser.parse(search))
                 .inOrg("p.org_id", includeSystem).inOrg("r.org_id", includeSystem);
-//        String sql = format("SELECT count(1) FROM logins l, people p, roles r " +
-//                            "WHERE p.id = l.person_id AND l.role_id = r.id AND r.name=?%s",
-//                            optionalWhereClause(search));
         try (Connection conn = getConnection();
              PreparedStatement stmt = query.prepareStatement(conn);
              ResultSet rs = stmt.executeQuery()) {
@@ -87,13 +81,6 @@ public class LoginDB extends DBAccess {
     }
 
     public List<Credentials> getCredentials(int start, int count, String sortField, String search, boolean includeSystem) {
-//        String sql = format("SELECT l.*, p.name AS name, r.name AS role, p.email " +
-//                        "FROM logins l, people p, roles r " +
-//                        "WHERE p.id = l.person_id AND l.role_id=r.id%s%s " +
-//                        "ORDER BY %s LIMIT ? OFFSET ?",
-//                        optionalWhereClause(search),
-//                        includeSystem? "": " AND r.id <> 1",
-//                        sortField);
         QueryBuilder query = baseQuery(includeSystem).search(searchParser.parse(search))
             .sort(sortField).limit(count).offset(start);
 
@@ -109,9 +96,6 @@ public class LoginDB extends DBAccess {
 
     public Credentials getCredentials(String email) {
         QueryBuilder query = baseQuery(true).where("p.email=?", email);
-//        PreparedStatement stmt = conn.prepareStatement("SELECT l.*, p.name AS name, r.name AS role, p.email " +
-//                "FROM logins l, people p, roles r " +
-//                "WHERE p.id = l.person_id AND l.role_id = r.id AND p.email=?");
         try (Connection conn = getConnection();
              PreparedStatement stmt = query.prepareStatement(conn) ){
 
@@ -127,9 +111,6 @@ public class LoginDB extends DBAccess {
 
     public Credentials getCredentials(int personId) {
         QueryBuilder query = baseQuery(true).where("l.person_id=?", personId);
-//        PreparedStatement stmt = conn.prepareStatement("SELECT l.*, p.name AS name, r.name AS role, p.email " +
-//                "FROM logins l, people p, roles r " +
-//                "WHERE p.id = l.person_id AND l.role_id=r.id AND l.person_id=?");
         try (Connection conn = getConnection();
              PreparedStatement stmt = query.prepareStatement(conn) ){
 
@@ -144,16 +125,9 @@ public class LoginDB extends DBAccess {
     }
 
     public List<Credentials> getCredentialsForRole(String role, int start, int count, String sortField, String search) {
-//        String sql = format("SELECT l.*, p.name AS name, r.name AS role, p.email " +
-//                            "FROM logins l, people p, roles r " +
-//                            "WHERE p.id = l.person_id AND l.role_id=r.id AND r.name=?%s " +
-//                            "ORDER BY %s LIMIT ? OFFSET ?",
-//                            optionalWhereClause(search), sortField);
-
         QueryBuilder query = baseQuery(role.equals(SYSTEM))
                 .search(searchParser.parse(search)).where("r.name=?", role)
                 .sort(sortField).limit(count).offset(start);
-        LOG.debug("Generated query: " + query.getSql());
         try (Connection conn = getConnection();
              PreparedStatement stmt = query.prepareStatement(conn) ){
 
