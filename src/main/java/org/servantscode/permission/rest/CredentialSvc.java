@@ -2,6 +2,7 @@ package org.servantscode.permission.rest;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.servantscode.commons.db.SessionDB;
 import org.servantscode.commons.rest.PaginatedResponse;
 import org.servantscode.commons.rest.SCServiceBase;
 import org.servantscode.permission.Credentials;
@@ -28,9 +29,11 @@ public class CredentialSvc extends SCServiceBase {
     private static final Logger LOG = LogManager.getLogger(CredentialSvc.class);
 
     LoginDB db;
+    SessionDB sessionDb;
 
     public CredentialSvc() {
         db = new LoginDB();
+        sessionDb = new SessionDB();
     }
 
 
@@ -161,6 +164,7 @@ public class CredentialSvc extends SCServiceBase {
             //TODO: Password rules go here
             String hashedPassword = encryptPassword(request.getPassword());
             updated = db.updatePassword(request.getId(), hashedPassword);
+            sessionDb.deleteAllSessions(request.getId());
         }
 
         Credentials creds = db.getCredentials(request.getId());

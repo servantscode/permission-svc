@@ -2,6 +2,7 @@ package org.servantscode.permission.rest;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.servantscode.commons.db.SessionDB;
 import org.servantscode.commons.rest.SCServiceBase;
 import org.servantscode.permission.*;
 import org.servantscode.permission.db.LoginDB;
@@ -21,9 +22,11 @@ public class PasswordSvc extends SCServiceBase {
     private static final Logger LOG = LogManager.getLogger(PasswordSvc.class);
 
     private LoginDB db;
+    private SessionDB sessionDB;
 
     public PasswordSvc() {
         this.db = new LoginDB();
+        this.sessionDB = new SessionDB();
     }
 
     @POST @Path("/reset") @Consumes(MediaType.APPLICATION_JSON)
@@ -38,6 +41,7 @@ public class PasswordSvc extends SCServiceBase {
         dbCreds.setResetToken(UUID.randomUUID().toString());
 
         db.updateCredentials(dbCreds);
+        sessionDB.deleteAllSessions(dbCreds.getId());
         EmailNotificationClient emailClient = new EmailNotificationClient(JWTGenerator.systemToken());
         emailClient.sendPasswordResetEmail(dbCreds.getEmail(), dbCreds.getResetToken());
         LOG.info("Password reset requested for: " + request.getEmail());
@@ -65,6 +69,7 @@ public class PasswordSvc extends SCServiceBase {
         }
 
         db.updatePassword(personId, encryptPassword(request.getNewPassword()));
+        sessionDB.deleteAllSessions(personId);
         LOG.info("Password updated by user.");
     }
 }
