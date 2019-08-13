@@ -41,7 +41,7 @@ public class CredentialSvc extends SCServiceBase {
     public PaginatedResponse<PublicCredentials> usersWithAccess(@QueryParam("start") @DefaultValue("0") int start,
                                                                 @QueryParam("count") @DefaultValue("10") int count,
                                                                 @QueryParam("sort_field") @DefaultValue("name") String sortField,
-                                                                @QueryParam("partial_name") @DefaultValue("") String search,
+                                                                @QueryParam("search") @DefaultValue("") String search,
                                                                 @Context SecurityContext securityContext) {
 
         verifyUserAccess("admin.login.list");
@@ -66,7 +66,7 @@ public class CredentialSvc extends SCServiceBase {
                                                               @QueryParam("start") @DefaultValue("0") int start,
                                                               @QueryParam("count") @DefaultValue("10") int count,
                                                               @QueryParam("sort_field") @DefaultValue("name") String sortField,
-                                                              @QueryParam("partial_name") @DefaultValue("") String search,
+                                                              @QueryParam("search") @DefaultValue("") String search,
                                                               @Context SecurityContext securityContext) {
 
         verifyUserAccess("admin.login.list");

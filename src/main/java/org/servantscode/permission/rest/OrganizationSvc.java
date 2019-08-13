@@ -31,7 +31,7 @@ public class OrganizationSvc extends SCServiceBase {
     public PaginatedResponse<Organization> getOrganizations(@QueryParam("start") @DefaultValue("0") int start,
                                             @QueryParam("count") @DefaultValue("10") int count,
                                             @QueryParam("sort_field") @DefaultValue("name") String sortField,
-                                            @QueryParam("partial_name") @DefaultValue("") String search,
+                                            @QueryParam("search") @DefaultValue("") String search,
                                             @Context SecurityContext securityContext) {
 
         verifyUserAccess("system.organization.list");

@@ -30,7 +30,7 @@ public class RoleSvc extends SCServiceBase {
     public PaginatedResponse<Role> getRoles(@QueryParam("start") @DefaultValue("0") int start,
                                             @QueryParam("count") @DefaultValue("10") int count,
                                             @QueryParam("sort_field") @DefaultValue("name") String sortField,
-                                            @QueryParam("partial_name") @DefaultValue("") String nameSearch,
+                                            @QueryParam("search") @DefaultValue("") String nameSearch,
                                             @Context SecurityContext securityContext) {
 
         verifyUserAccess("admin.role.list");
