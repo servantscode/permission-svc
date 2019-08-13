@@ -57,7 +57,9 @@ equipment.update
 email.send
 event.create
 event.delete
+event.export
 event.list
+event.private.read
 event.read
 event.update
 family.create
