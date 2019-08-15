@@ -8,9 +8,7 @@ import org.servantscode.permission.*;
 import org.servantscode.permission.db.LoginDB;
 
 import javax.ws.rs.*;
-import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.SecurityContext;
 import java.util.UUID;
 
 import static org.servantscode.commons.StringUtils.isSet;
@@ -30,8 +28,7 @@ public class PasswordSvc extends SCServiceBase {
     }
 
     @POST @Path("/reset") @Consumes(MediaType.APPLICATION_JSON)
-    public void requestPasswordReset(@Context SecurityContext context,
-                                     ResetPasswordRequest request) {
+    public void requestPasswordReset(ResetPasswordRequest request) {
 
         Credentials dbCreds = db.getCredentials(request.getEmail());
         if(dbCreds == null)
@@ -48,8 +45,7 @@ public class PasswordSvc extends SCServiceBase {
     }
 
     @POST @Consumes(MediaType.APPLICATION_JSON)
-    public void resetPassword(@Context SecurityContext context,
-                              PasswordRequest request) {
+    public void resetPassword(PasswordRequest request) {
 
         int personId;
         if(isSet(request.getPasswordToken())) {
@@ -58,7 +54,7 @@ public class PasswordSvc extends SCServiceBase {
             if(personId == -1)
                 throw new NotFoundException();
         } else {
-            personId = getUserId(context);
+            personId = getUserId();
             if(personId == -1)
                 throw new NotFoundException();
 
