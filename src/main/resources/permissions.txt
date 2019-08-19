@@ -146,3 +146,8 @@ sacrament.mass.intention.create
 sacrament.mass.intention.list
 sacrament.mass.intention.read
 sacrament.mass.intention.update
+search.create
+search.delete
+search.list
+search.read
+search.update
