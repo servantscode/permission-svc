@@ -145,6 +145,10 @@ program.session.delete
 program.session.list
 program.session.read
 program.session.update
+registration.request.approve
+registration.request.delete
+registration.request.list
+registration.request.read
 relationship.list
 relationship.update
 reservation.create
