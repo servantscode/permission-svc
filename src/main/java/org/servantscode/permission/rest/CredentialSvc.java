@@ -153,7 +153,7 @@ public class CredentialSvc extends SCServiceBase {
         verifyUserAccess("admin.login.update");
 
         //Only system users can see system.
-        if(!securityContext.isUserInRole("system") && request.getRole().equals("system"))
+        if(!securityContext.isUserInRole("system") && isSet(request.getRole()) && request.getRole().equals("system"))
             throw new BadRequestException();
 
         if(request.getId() <= 0)
