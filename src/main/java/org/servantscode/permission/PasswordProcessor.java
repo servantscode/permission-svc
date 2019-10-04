@@ -14,4 +14,8 @@ public class PasswordProcessor {
     public static boolean verifyPassword(String oldPassword, String hashedPassword) {
         return BCrypt.checkpw(oldPassword, hashedPassword);
     }
+
+    public static void main(String[] args) {
+        System.err.println(encryptPassword("1234"));
+    }
 }
