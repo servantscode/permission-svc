@@ -105,6 +105,7 @@ photo.delete
 photo.read
 pledge.create
 pledge.delete
+pledge.export
 pledge.list
 pledge.metrics
 pledge.read
