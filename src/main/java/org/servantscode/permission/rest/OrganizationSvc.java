@@ -48,7 +48,6 @@ public class OrganizationSvc extends SCServiceBase {
 
     @GET @Path("/{id}") @Produces(MediaType.APPLICATION_JSON)
     public Organization getOrganization(@PathParam("id") int id) {
-        LOG.debug("Getting org by id: " + id);
         verifyUserAccess("system.organization.read");
         try {
             return db.getOrganization(id);
@@ -60,7 +59,6 @@ public class OrganizationSvc extends SCServiceBase {
 
     @GET @Path("/active") @Produces(MediaType.APPLICATION_JSON)
     public Organization getActiveOrganization() {
-        LOG.debug("Getting active org");
         try {
             return OrganizationContext.getOrganization();
         } catch (Throwable t) {

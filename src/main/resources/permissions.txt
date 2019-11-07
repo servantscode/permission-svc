@@ -20,6 +20,8 @@ admin.mail.config.delete
 admin.mail.config.read
 admin.mail.config.update
 admin.organization.update
+admin.parish.delete
+admin.parish.update
 admin.person.delete
 admin.photo.create
 admin.preference.create
@@ -93,6 +95,11 @@ note.delete
 note.list
 note.read
 note.update
+parish.create
+parish.export
+parish.list
+parish.read
+parish.update
 person.create
 person.delete
 person.export
