@@ -10,6 +10,9 @@ public class Credentials {
     private boolean resetPassword;
 
     @JsonIgnore
+    private boolean roleRequiresCheckin;
+
+    @JsonIgnore
     private String resetToken;
 
     @JsonIgnore
@@ -38,6 +41,9 @@ public class Credentials {
 
     public boolean isResetPassword() { return resetPassword; }
     public void setResetPassword(boolean resetPassword) { this.resetPassword = resetPassword; }
+
+    public boolean isRoleRequiresCheckin() { return roleRequiresCheckin; }
+    public void setRoleRequiresCheckin(boolean roleRequiresCheckin) { this.roleRequiresCheckin = roleRequiresCheckin; }
 
     public String getResetToken() { return resetToken; }
     public void setResetToken(String resetToken) { this.resetToken = resetToken; }

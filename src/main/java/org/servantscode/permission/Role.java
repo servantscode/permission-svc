@@ -4,6 +4,7 @@ public class Role {
 
     private int id;
     private String name;
+    private boolean requiresCheckin;
 
     private String[] permissions;
 
@@ -20,6 +21,9 @@ public class Role {
 
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
+
+    public boolean isRequiresCheckin() { return requiresCheckin; }
+    public void setRequiresCheckin(boolean requiresCheckin) { this.requiresCheckin = requiresCheckin; }
 
     public String[] getPermissions() { return permissions; }
     public void setPermissions(String[] permissions) { this.permissions = permissions; }

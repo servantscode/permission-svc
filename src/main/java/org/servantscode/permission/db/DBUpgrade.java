@@ -26,6 +26,7 @@ public class DBUpgrade extends AbstractDBUpgrade {
             LOG.info("-- Creating roles table");
             runSql("CREATE TABLE roles (id SERIAL PRIMARY KEY, " +
                                        "name TEXT, " +
+                                       "requires_checkin BOOLEAN DEFAULT false, " +
                                        "org_id INTEGER references organizations(id) ON DELETE CASCADE)");
             runSql("INSERT INTO roles(name) values ('system')");
         }
@@ -54,5 +55,17 @@ public class DBUpgrade extends AbstractDBUpgrade {
                                           "expiration TIMESTAMP WITH TIME ZONE, " +
                                           "ip TEXT)");
         }
+
+        if(!tableExists("checkins")) {
+            LOG.info("-- Creating checkins table");
+            runSql("CREATE TABLE checkins (id BIGSERIAL PRIMARY KEY," +
+                                          "person_id INTEGER REFERENCES people(id) ON DELETE CASCADE, " +
+                                          "expiration TIMESTAMP WITH TIME ZONE," +
+                                          "checkedin_at TIMESTAMP WITH TIME ZONE," +
+                                          "checkedin_by INTEGER REFERENCES people(id) ON DELETE SET NULL, " +
+                                          "org_id INTEGER REFERENCES organizations(id))");
+        }
+
+        ensureColumn("roles", "requires_checkin", "BOOLEAN DEFAULT false");
     }
 }

@@ -74,7 +74,7 @@ public class LoginDB extends DBAccess {
     }
 
     private QueryBuilder baseQuery(boolean includeSystem) {
-        return select("l.*", "p.name AS name", "r.name AS role", "p.email")
+        return select("l.*", "p.name AS name", "r.name AS role", "r.requires_checkin AS role_requires_checkin", "p.email")
             .from("logins l", "people p", "roles r")
             .where("p.id = l.person_id").where("l.role_id = r.id")
             .inOrg("p.org_id", includeSystem).inOrg("r.org_id", includeSystem);
@@ -218,6 +218,7 @@ public class LoginDB extends DBAccess {
             throw new RuntimeException("Could not delete login for Person(" + personId + ")", e);
         }
     }
+
     // ----- Private -----
     private List<Credentials> processResults(PreparedStatement stmt) throws SQLException {
         try (ResultSet rs = stmt.executeQuery()){
@@ -229,6 +230,7 @@ public class LoginDB extends DBAccess {
                 creds.setId(rs.getInt("person_id"));
                 creds.setEmail(rs.getString("email"));
                 creds.setHashedPassword(rs.getString("hashed_password"));
+                creds.setRoleRequiresCheckin(rs.getBoolean("role_requires_checkin"));
                 creds.setRole(rs.getString("role"));
                 creds.setRoleId(rs.getInt("role_id"));
                 boolean passwordResetRequired = rs.getBoolean("reset_password");

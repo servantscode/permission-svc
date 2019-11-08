@@ -6,6 +6,11 @@ admin.sacrament.event.override
 admin.sacrament.marriage.update
 admin.sacrament.marriage.delete
 admin.sacrament.mass.intention.delete
+admin.checkin.create
+admin.checkin.delete
+admin.checkin.list
+admin.checkin.read
+admin.checkin.update
 admin.event.create
 admin.event.delete
 admin.event.edit
