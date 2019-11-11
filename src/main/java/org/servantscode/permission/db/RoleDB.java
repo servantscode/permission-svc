@@ -45,6 +45,11 @@ public class RoleDB extends EasyDB<Role> {
         return getOne(selectAll().from("roles").withId(id).inOrg(true));
     }
 
+    public Role getUserRole(int userId) {
+        return getOne(select("r.*").from("logins l").leftJoin("roles r ON r.id=l.role_id")
+                .with("l.person_id", userId).inOrg("r.org_id"));
+    }
+
     public boolean verifyRole(String role) {
         return existsAny(count().from("roles").with("name", role).inOrg(role.equals(SYSTEM)));
     }

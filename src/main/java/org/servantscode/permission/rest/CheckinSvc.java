@@ -5,12 +5,15 @@ import org.apache.logging.log4j.Logger;
 import org.servantscode.commons.rest.PaginatedResponse;
 import org.servantscode.commons.rest.SCServiceBase;
 import org.servantscode.permission.Checkin;
+import org.servantscode.permission.Role;
 import org.servantscode.permission.db.CheckinDB;
+import org.servantscode.permission.db.RoleDB;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import java.time.ZonedDateTime;
 import java.util.List;
+import java.util.Map;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
@@ -19,21 +22,41 @@ public class CheckinSvc extends SCServiceBase {
     private static Logger LOG = LogManager.getLogger(CheckinSvc.class);
 
     private CheckinDB db;
+    private RoleDB roleDb;
 
     public CheckinSvc() {
         db = new CheckinDB();
+        roleDb = new RoleDB();
     }
 
     @GET @Produces(MediaType.APPLICATION_JSON)
     public PaginatedResponse<Checkin> getCheckins(@QueryParam("start") @DefaultValue("0") int start,
                                             @QueryParam("count") @DefaultValue("10") int count,
-                                            @QueryParam("sort_field") @DefaultValue("person_name") String sortField,
+                                            @QueryParam("sort_field") @DefaultValue("personName") String sortField,
                                             @QueryParam("search") @DefaultValue("") String search) {
 
         verifyUserAccess("admin.checkin.list");
         try {
             int totalCheckins = db.getCount(search);
             List<Checkin> results = db.getCheckins(search, sortField, start, count);
+
+            return new PaginatedResponse<>(start, results.size(), totalCheckins, results);
+        } catch (Throwable t) {
+            LOG.error("Retrieving checkins failed:", t);
+            throw t;
+        }
+    }
+
+    @GET @Path("/active") @Produces(MediaType.APPLICATION_JSON)
+    public PaginatedResponse<Checkin> getActiveCheckins(@QueryParam("start") @DefaultValue("0") int start,
+                                                  @QueryParam("count") @DefaultValue("10") int count,
+                                                  @QueryParam("sort_field") @DefaultValue("personName") String sortField,
+                                                  @QueryParam("search") @DefaultValue("") String search) {
+
+        verifyUserAccess("admin.checkin.list");
+        try {
+            int totalCheckins = db.getActiveCount(search);
+            List<Checkin> results = db.getActiveCheckins(search, sortField, start, count);
 
             return new PaginatedResponse<>(start, results.size(), totalCheckins, results);
         } catch (Throwable t) {
@@ -60,6 +83,10 @@ public class CheckinSvc extends SCServiceBase {
         if(checkin.getPersonId() <= 0 ||
             checkin.getExpiration() == null || checkin.getExpiration().isBefore(ZonedDateTime.now()))
             throw new BadRequestException();
+
+        Role r = roleDb.getUserRole(checkin.getPersonId());
+        if(r == null || !r.isRequiresCheckin())
+            throw new BadRequestException("No checkin required/accepted.");
 
         checkin.setCheckedinAt(ZonedDateTime.now());
         checkin.setCheckedinById(getUserId());

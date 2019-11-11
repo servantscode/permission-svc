@@ -13,17 +13,24 @@ import org.servantscode.permission.Checkin;
 import org.servantscode.permission.Checkin;
 
 import java.sql.*;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 import static org.servantscode.commons.security.SCSecurityContext.SYSTEM;
 
 public class CheckinDB extends EasyDB<Checkin> {
     private static Logger LOG = LogManager.getLogger(CheckinDB.class);
 
+    private static Map<String, String> FIELD_MAP = new HashMap<String, String>(8);
+
+    static {
+        FIELD_MAP.put("personName", "vol.name");
+    }
 
     public CheckinDB() {
-        super(Checkin.class, "personName");
+        super(Checkin.class, "personName", FIELD_MAP);
     }
 
     private QueryBuilder select(QueryBuilder selection) {
@@ -43,6 +50,20 @@ public class CheckinDB extends EasyDB<Checkin> {
     public List<Checkin> getCheckins(String search, String sortField, int start, int count) {
         return get(select(fields()).search(searchParser.parse(search)).inOrg("c.org_id")
                 .page(sortField, start, count));
+    }
+
+
+    private QueryBuilder distinct() {
+        return select("DISTINCT ON (vol.name) c.*", "vol.name AS person_name", "admin.name AS checkedin_by_name");
+    }
+
+    public int getActiveCount(String search) {
+        return getCount(select(select("COUNT(DISTINCT c.person_id)")).search(searchParser.parse(search)).inOrg("c.org_id"));
+    }
+
+    public List<Checkin> getActiveCheckins(String search, String sortField, int start, int count) {
+        return get(select(distinct()).search(searchParser.parse(search)).inOrg("c.org_id")
+                .page("vol.name, expiration DESC", start, count));
     }
 
     public Checkin getCheckin(long id) {
@@ -86,6 +107,7 @@ public class CheckinDB extends EasyDB<Checkin> {
     @Override
     protected Checkin processRow(ResultSet rs) throws SQLException {
         Checkin c = new Checkin();
+        c.setId(rs.getLong("id"));
         c.setPersonId(rs.getInt("person_id"));
         c.setPersonName(rs.getString("person_name"));
         c.setExpiration(convert(rs.getTimestamp("expiration")));
