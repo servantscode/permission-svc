@@ -4,10 +4,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.ThreadContext;
 import org.servantscode.commons.rest.SCServiceBase;
-import org.servantscode.permission.Credentials;
-import org.servantscode.permission.JWTGenerator;
-import org.servantscode.permission.LoginRequest;
-import org.servantscode.permission.Role;
+import org.servantscode.permission.*;
 import org.servantscode.permission.db.CheckinDB;
 import org.servantscode.permission.db.LoginDB;
 import org.servantscode.permission.db.RoleDB;
@@ -40,10 +37,15 @@ public class LoginSvc extends SCServiceBase {
 
         Credentials dbCreds = db.getCredentials(request.getEmail());
         if (dbCreds != null && verifyPassword(request.getPassword(), dbCreds.getHashedPassword())) {
-            if(dbCreds.isRoleRequiresCheckin() && !checkinDb.isCheckedIn(dbCreds.getId()))
-                throw new NotAuthorizedException("Role requires checkin for access.");
-
-            String creds = JWTGenerator.generateJWT(dbCreds);
+            String creds;
+            if(dbCreds.isRoleRequiresCheckin()) {
+                Checkin checkin = checkinDb.getActiveUserCheckin(dbCreds.getId());
+                if (checkin == null)
+                    throw new NotAuthorizedException("Role requires checkin for access.");
+                creds = JWTGenerator.generateJWTForCheckin(dbCreds, checkin.getExpiration());
+            } else {
+                creds = JWTGenerator.generateJWT(dbCreds);
+            }
             LOG.info(dbCreds.getEmail() + " logged in.");
             ThreadContext.put("user", dbCreds.getEmail());
             return creds;

@@ -70,8 +70,8 @@ public class CheckinDB extends EasyDB<Checkin> {
         return getOne(select(fields()).with("c.id", id).inOrg("c.org_id"));
     }
 
-    public boolean isCheckedIn(int personId) {
-        return existsAny(select(count()).with("person_id", personId).where("expiration > now()").inOrg("c.org_id"));
+    public Checkin getActiveUserCheckin(int personId) {
+        return getOne(select(fields()).with("person_id", personId).where("expiration > now()").inOrg("c.org_id"));
     }
 
     public Checkin create(Checkin checkin) {
@@ -116,4 +116,5 @@ public class CheckinDB extends EasyDB<Checkin> {
         c.setCheckedinByName(rs.getString("checkedin_by_name"));
         return c;
     }
+
 }

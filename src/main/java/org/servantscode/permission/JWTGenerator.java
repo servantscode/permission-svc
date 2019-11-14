@@ -11,6 +11,7 @@ import org.servantscode.commons.db.SessionDB;
 import org.servantscode.commons.security.OrganizationContext;
 
 import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.Date;
 
 import static org.servantscode.commons.security.SCSecurityContext.SYSTEM;
@@ -41,18 +42,26 @@ public class JWTGenerator {
         }
     }
 
+    public static String generateJWTForCheckin(Credentials creds, ZonedDateTime expiration) {
+        Date expirationDate = new Date(expiration.toInstant().toEpochMilli());
+        return generateJWT(creds, expirationDate);
+    }
+
     public static String generateJWT(Credentials creds) {
+        long duration = 24*60*60*1000; // 24 hours; TODO: Parameterize this
+        Date expiration = new Date(new Date().getTime() + duration);
+        return generateJWT(creds, expiration);
+    }
+
+    public static String generateJWT(Credentials creds, Date expiration) {
         try {
             Algorithm algorithm = Algorithm.HMAC256(SIGNING_KEY);
-            Date now = new Date();
-            long duration = 24*60*60*1000; // 24 hours; TODO: Parameterize this
-            Date expiration = new Date(now.getTime() + duration);
 
             Organization org = OrganizationContext.getOrganization();
 
             String token = JWT.create()
                     .withSubject(creds.getEmail())
-                    .withIssuedAt(now)
+                    .withIssuedAt(new Date())
                     .withExpiresAt(expiration)
                     .withIssuer("Servant's Code")
                     .withClaim("role", creds.getRole())

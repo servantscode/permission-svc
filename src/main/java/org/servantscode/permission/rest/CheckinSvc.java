@@ -2,6 +2,8 @@ package org.servantscode.permission.rest;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.omg.CosNaming.NamingContextPackage.NotFound;
+import org.servantscode.commons.db.SessionDB;
 import org.servantscode.commons.rest.PaginatedResponse;
 import org.servantscode.commons.rest.SCServiceBase;
 import org.servantscode.permission.Checkin;
@@ -23,10 +25,12 @@ public class CheckinSvc extends SCServiceBase {
 
     private CheckinDB db;
     private RoleDB roleDb;
+    private SessionDB sessionDb;
 
     public CheckinSvc() {
         db = new CheckinDB();
         roleDb = new RoleDB();
+        sessionDb = new SessionDB();
     }
 
     @GET @Produces(MediaType.APPLICATION_JSON)
@@ -98,12 +102,17 @@ public class CheckinSvc extends SCServiceBase {
     public Checkin updateCheckin(Checkin checkin) {
         verifyUserAccess("admin.checkin.update");
 
-        if(checkin.getId() <= 0 || checkin.getPersonId() <= 0 ||
+        Checkin existingCheckin = db.getCheckin(checkin.getId());
+
+        if(checkin.getId() <= 0 || checkin.getPersonId() <= 0 || existingCheckin == null ||
                 checkin.getExpiration() == null || checkin.getExpiration().isBefore(ZonedDateTime.now()))
             throw new BadRequestException();
 
         checkin.setCheckedinAt(ZonedDateTime.now());
         checkin.setCheckedinById(getUserId());
+
+        if(checkin.getExpiration().isBefore(existingCheckin.getExpiration()))
+            sessionDb.deleteAllSessions(existingCheckin.getPersonId());
 
         return db.update(checkin);
     }
@@ -115,8 +124,12 @@ public class CheckinSvc extends SCServiceBase {
         if(id <= 0)
             throw new BadRequestException();
 
-        if(!db.deleteCheckin(id))
+        Checkin existingCheckin = db.getCheckin(id);
+
+        if(existingCheckin == null || !db.deleteCheckin(id))
             throw new NotFoundException();
+
+        sessionDb.deleteAllSessions(existingCheckin.getPersonId());
         LOG.debug("Checkin revoked: " + id);
     }
 }
