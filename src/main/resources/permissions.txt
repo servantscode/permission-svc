@@ -16,6 +16,11 @@ admin.event.delete
 admin.event.edit
 admin.family.delete
 admin.fund.delete
+admin.integration.create
+admin.integration.delete
+admin.integration.list
+admin.integration.read
+admin.integration.update
 admin.login.create
 admin.login.delete
 admin.login.list
