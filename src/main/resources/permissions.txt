@@ -1,11 +1,3 @@
-admin.sacrament.baptism.delete
-admin.sacrament.baptism.update
-admin.sacrament.confirmation.delete
-admin.sacrament.confirmation.update
-admin.sacrament.event.override
-admin.sacrament.marriage.update
-admin.sacrament.marriage.delete
-admin.sacrament.mass.intention.delete
 admin.checkin.create
 admin.checkin.delete
 admin.checkin.list
@@ -20,6 +12,7 @@ admin.integration.create
 admin.integration.delete
 admin.integration.list
 admin.integration.read
+admin.integration.sync
 admin.integration.update
 admin.login.create
 admin.login.delete
@@ -29,6 +22,8 @@ admin.login.update
 admin.mail.config.delete
 admin.mail.config.read
 admin.mail.config.update
+admin.note.delete
+admin.note.update
 admin.organization.update
 admin.parish.delete
 admin.parish.update
@@ -44,6 +39,14 @@ admin.role.delete
 admin.role.list
 admin.role.read
 admin.role.update
+admin.sacrament.baptism.delete
+admin.sacrament.baptism.update
+admin.sacrament.confirmation.delete
+admin.sacrament.confirmation.update
+admin.sacrament.event.override
+admin.sacrament.marriage.update
+admin.sacrament.marriage.delete
+admin.sacrament.mass.intention.delete
 category.create
 category.delete
 category.list
