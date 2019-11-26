@@ -5,6 +5,7 @@ import org.apache.logging.log4j.Logger;
 import org.servantscode.commons.db.SessionDB;
 import org.servantscode.commons.rest.PaginatedResponse;
 import org.servantscode.commons.rest.SCServiceBase;
+import org.servantscode.commons.security.SystemJWTGenerator;
 import org.servantscode.permission.Credentials;
 import org.servantscode.permission.EmailNotificationClient;
 import org.servantscode.permission.JWTGenerator;
@@ -215,7 +216,7 @@ public class CredentialSvc extends SCServiceBase {
         if(isEmpty(creds.getEmail()) || isEmpty(creds.getResetToken()))
             throw new IllegalArgumentException();
 
-        EmailNotificationClient emailClient = new EmailNotificationClient(JWTGenerator.systemToken());
+        EmailNotificationClient emailClient = new EmailNotificationClient(SystemJWTGenerator.generateToken());
         emailClient.sendPasswordResetEmail(creds.getEmail(), creds.getResetToken());
         LOG.info("Password email generated for: " + creds.getEmail());
     }

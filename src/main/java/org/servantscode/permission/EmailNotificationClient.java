@@ -38,7 +38,6 @@ public class EmailNotificationClient {
 
     public void sendPasswordResetEmail(String to, String resetToken) {
         String applicationUrl = getHost();
-        LOG.debug("APPLICATION_URL: " + applicationUrl);
         String from = ConfigUtils.getConfiguration("mail.user.account");
         sendEmail(from, to, "Password reset requested",
                 "We've received a request to set or reset your password.<br/><br/>" +
@@ -90,8 +89,7 @@ public class EmailNotificationClient {
                 target = target.property(entry.getKey(), entry.getValue());
         }
 
-        return target
-                .request(MediaType.APPLICATION_JSON)
+        return target.request(MediaType.APPLICATION_JSON)
                 .header("x-sc-org", OrganizationContext.getOrganization().getHostName())
                 .header("x-sc-transaction-id", ThreadContext.get("transaction.id"))
                 .header("Authorization", "Bearer " + token);

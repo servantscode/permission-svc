@@ -21,27 +21,6 @@ public class JWTGenerator {
 
     private static SessionDB db = new SessionDB();
 
-    public static String systemToken() {
-        try {
-            Algorithm algorithm = Algorithm.HMAC256(SIGNING_KEY);
-            Date now = new Date();
-            long duration = 60*1000; // 1 minute
-
-            return JWT.create()
-                    .withSubject(SYSTEM)
-                    .withIssuedAt(now)
-                    .withExpiresAt(new Date(now.getTime() + duration))
-                    .withIssuer("Servant's Code")
-                    .withClaim("role", "system")
-                    .withClaim("userId", "0")
-                    .withClaim("org", OrganizationContext.getOrganization().getName())
-                    .withArrayClaim("permissions", new String[] {"*"})
-                    .sign(algorithm);
-        } catch (JWTCreationException e){
-            throw new RuntimeException("Could not create system JWT Token", e);
-        }
-    }
-
     public static String generateJWTForCheckin(Credentials creds, ZonedDateTime expiration) {
         Date expirationDate = new Date(expiration.toInstant().toEpochMilli());
         return generateJWT(creds, expirationDate);

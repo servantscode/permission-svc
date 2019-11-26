@@ -4,6 +4,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.servantscode.commons.db.SessionDB;
 import org.servantscode.commons.rest.SCServiceBase;
+import org.servantscode.commons.security.SystemJWTGenerator;
 import org.servantscode.permission.*;
 import org.servantscode.permission.db.LoginDB;
 
@@ -39,7 +40,7 @@ public class PasswordSvc extends SCServiceBase {
 
         db.updateCredentials(dbCreds);
         sessionDB.deleteAllSessions(dbCreds.getId());
-        EmailNotificationClient emailClient = new EmailNotificationClient(JWTGenerator.systemToken());
+        EmailNotificationClient emailClient = new EmailNotificationClient(SystemJWTGenerator.generateToken());
         emailClient.sendPasswordResetEmail(dbCreds.getEmail(), dbCreds.getResetToken());
         LOG.info("Password reset requested for: " + request.getEmail());
     }

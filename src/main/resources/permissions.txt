@@ -88,6 +88,14 @@ fund.create
 fund.list
 fund.read
 fund.update
+integration.donation.delete
+integration.donation.list
+integration.donation.read
+integration.donation.update
+integration.donor.delete
+integration.donor.list
+integration.donor.read
+integration.donor.update
 ministry.create
 ministry.delete
 ministry.enrollment.create
