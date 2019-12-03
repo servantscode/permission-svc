@@ -8,6 +8,10 @@ admin.event.delete
 admin.event.edit
 admin.family.delete
 admin.fund.delete
+admin.integration.automation.create
+admin.integration.automation.delete
+admin.integration.automation.read
+admin.integration.automation.update
 admin.integration.create
 admin.integration.delete
 admin.integration.list
