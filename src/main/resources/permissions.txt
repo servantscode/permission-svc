@@ -92,10 +92,17 @@ fund.create
 fund.list
 fund.read
 fund.update
+integration.automation.create
+integration.automation.delete
+integration.automation.list
+integration.automation.read
+integration.automation.update
+integration.donation.create
 integration.donation.delete
 integration.donation.list
 integration.donation.read
 integration.donation.update
+integration.donor.create
 integration.donor.delete
 integration.donor.list
 integration.donor.read
