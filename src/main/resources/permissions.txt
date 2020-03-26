@@ -175,11 +175,11 @@ program.registration.delete
 program.registration.list
 program.registration.read
 program.registration.update
-program.section.create
-program.section.delete
-program.section.list
-program.section.read
-program.section.update
+program.classroom.create
+program.classroom.delete
+program.classroom.list
+program.classroom.read
+program.classroom.update
 program.session.create
 program.session.delete
 program.session.list
