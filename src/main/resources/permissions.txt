@@ -169,7 +169,7 @@ program.catechist.create
 program.catechist.delete
 program.catechist.list
 program.catechist.read
-program.catechist.update
+program.catechise.update
 program.group.create
 program.group.delete
 program.group.list
@@ -185,6 +185,11 @@ program.classroom.delete
 program.classroom.list
 program.classroom.read
 program.classroom.update
+program.section.create
+program.section.delete
+program.section.list
+program.section.read
+program.section.update
 program.session.create
 program.session.delete
 program.session.list
