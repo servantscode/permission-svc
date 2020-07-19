@@ -5,7 +5,7 @@ admin.checkin.read
 admin.checkin.update
 admin.event.create
 admin.event.delete
-admin.event.edit
+admin.event.update
 admin.family.delete
 admin.fund.delete
 admin.integration.automation.create
